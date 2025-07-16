@@ -55,21 +55,40 @@ def update_user(user_model: UserUpdateRequestModel) -> int:
             ),
         )
 
-
 def get_all_users(limit: int = 10, offset: int = 0) -> list[dict]:
-    users = database.query_get(
+    patients = database.query_get(
         """
         SELECT
-            user.id,
-            user.first_name,
-            user.last_name,
-            user.email
-        FROM user
+            id,
+            national_id,
+            full_name,
+            date_of_birth,
+            gender,
+            phone,
+            occupation,
+            ethnicity,
+            created_at
+        FROM kiosk.patients
         LIMIT %s OFFSET %s
         """,
         (limit, offset),
     )
-    return users
+    return patients
+
+# def get_all_users(limit: int = 10, offset: int = 0) -> list[dict]:
+#     users = database.query_get(
+#         """
+#         SELECT
+#             user.id,
+#             user.first_name,
+#             user.last_name,
+#             user.email
+#         FROM user
+#         LIMIT %s OFFSET %s
+#         """,
+#         (limit, offset),
+#     )
+#     return users
 
 
 def get_users_by_email(email: str) -> list[dict]:

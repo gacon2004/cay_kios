@@ -4,6 +4,9 @@ from user.routers import router as user_router
 from auth.routers import router as auth_router
 from dotenv import load_dotenv
 import os
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
+
 
 load_dotenv()
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
@@ -20,6 +23,9 @@ app = FastAPI(
     redoc_url="/v1/redoc",
     openapi_url="/v1/openapi.json",
 )
+templates = Jinja2Templates(directory="templates")
+
+
 
 # Set CORS
 origins = [

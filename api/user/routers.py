@@ -20,7 +20,7 @@ auth_handler = AuthProvider()
 
 @router.get("/v1/users", response_model=list[UserResponseModel])
 def get_all_users_api(
-    current_user: AuthUser = Depends(auth_handler.get_current_user),
+    # current_user: AuthUser = Depends(auth_handler.get_current_user),
 ):
     """
     This users get API allow you to fetch all user data.
