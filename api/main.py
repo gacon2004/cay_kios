@@ -2,6 +2,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from user.routers import router as user_router
 from auth.routers import router as auth_router
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
 # Set API info
 app = FastAPI(

@@ -8,7 +8,12 @@ from passlib.context import CryptContext
 from pydantic import BaseModel
 import os
 
-db_connector = DatabaseConnector()
+from dotenv import load_dotenv
+load_dotenv()
+
+def get_db():
+    return DatabaseConnector()
+# db_connector = DatabaseConnector()
 
 OAUTH2_SCHEME = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -109,6 +114,7 @@ class AuthProvider:
     async def get_current_user(
         self, token: Annotated[str, Depends(OAUTH2_SCHEME)]
     ) -> AuthUser:
+        db_connector = get_db()
         user = None
         try:
             payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
@@ -118,12 +124,13 @@ class AuthProvider:
             token_data = TokenData(user_email=user_email)
         except JWTError:
             raise CREDENTIALS_EXCEPTION
-        user = self.get_user_by_email(token_data.user_email)
+        user = self.get_user_by_email(token_data.user_email, db_connector)
         if user is None:
             raise CREDENTIALS_EXCEPTION
         return user
 
-    def get_user_by_email(self, user_email: str) -> AuthUser:
+    def get_user_by_email(self, user_email: str, db_connector : DatabaseConnector) -> AuthUser:
+
         user = db_connector.query_get(
             """
             SELECT

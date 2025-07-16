@@ -3,7 +3,6 @@ import os
 import pymysql.cursors
 from pymysql import converters
 
-
 class DatabaseConnector:
     def __init__(self):
         self.host = os.getenv("DATABASE_HOST")
