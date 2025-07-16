@@ -9,14 +9,14 @@ database = DatabaseConnector()
 
 
 def update_user(user_model: UserUpdateRequestModel) -> int:
-    # Check if the email is already in use by another user
+    # Check xem email đã được sử dụng hay chưa
     existing_user = get_users_by_email(user_model.email)
     if len(existing_user) != 0 and existing_user[0]["id"] != user_model.id:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Email is already in use by another user",
+            detail="Email đã được sử dụng",
         )
-    # Before updating the password, check if it has been changed
+    #Cập nhật thông tin người dùng (họ tên, email, mật khẩu). Nếu người dùng có nhập mật khẩu mới, thì hash và lưu lại. Nếu không nhập mật khẩu, thì chỉ cập nhật các thông tin còn lại.
     if user_model.password is not None and len(user_model.password) > 0:
         hashed_password = auth_handler.get_password_hash(user_model.password)
         # Update the user
