@@ -2,7 +2,7 @@ from fastapi import HTTPException, status
 from database.connector import DatabaseConnector
 from auth.provider import AuthProvider
 from auth.models import SignUpRequestModel
-from user.controllers.controllers import get_users_by_email
+from patient.controllers.controllers import get_patient_by_id
 
 auth_handler = AuthProvider()
 

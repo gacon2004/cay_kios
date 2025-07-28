@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from user.models.models import UserResponseModel
+from patient.models.models import PatientResponseModel
 
 
 class SignInRequestModel(BaseModel):
@@ -21,7 +21,7 @@ class TokenModel(BaseModel):
 
 class UserAuthResponseModel(BaseModel):
     token: TokenModel
-    user: UserResponseModel
+    user: PatientResponseModel
 
 
 class AccessTokenResponseModel(BaseModel):

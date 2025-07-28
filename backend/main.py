@@ -1,6 +1,7 @@
 from fastapi import FastAPI
+
 from fastapi.middleware.cors import CORSMiddleware
-from user.routers.routers import router as user_router
+from patient.routers.routers import router as user_router
 from auth.routers import router as auth_router
 from dotenv import load_dotenv
 import os
