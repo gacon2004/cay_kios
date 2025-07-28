@@ -20,45 +20,43 @@ auth_handler = AuthProvider()
 @router.post("/v1/auth/signup", response_model=UserAuthResponseModel)
 def signup_api(user_details: SignUpRequestModel):
     """
-    This sign-up API allow you to register your account, and return access token.
+    API đăng ký tài khoản mới bằng CCCD/CMND.
     """
-    user = register_user(user_details)
-    access_token = auth_handler.encode_token(user_details.email)
-    refresh_token = auth_handler.encode_refresh_token(user_details.email)
+    user = register_user(user_details)  # user trả về phải chứa "id", "national_id", "full_name"
+    access_token = auth_handler.create_access_token(user_id=user["id"])
+    refresh_token = auth_handler.encode_refresh_token(user["id"])
+
     return JSONResponse(
         status_code=status.HTTP_201_CREATED,
-        content=jsonable_encoder(
-            {
-                "token": {"access_token": access_token, "refresh_token": refresh_token},
-                "user": user,
-            }
-        ),
+        content=jsonable_encoder({
+            "token": {"access_token": access_token, "refresh_token": refresh_token},
+            "user": user
+        }),
     )
 
 
 @router.post("/v1/auth/signin", response_model=UserAuthResponseModel)
 def signin_api(user_details: SignInRequestModel):
     """
-    This sign-in API allow you to obtain your access token.
+    API đăng nhập bằng CCCD/CMND và mật khẩu.
     """
-    user = signin_user(user_details.email, user_details.password)
-    access_token = auth_handler.encode_token(user["email"])
-    refresh_token = auth_handler.encode_refresh_token(user["email"])
+    user = signin_user(user_details.national_id, user_details.password)
+    access_token = auth_handler.create_access_token(user_id=user.id)
+    refresh_token = auth_handler.encode_refresh_token(user.id)
+
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content=jsonable_encoder(
-            {
-                "token": {"access_token": access_token, "refresh_token": refresh_token},
-                "user": user,
-            }
-        ),
+        content=jsonable_encoder({
+            "token": {"access_token": access_token, "refresh_token": refresh_token},
+            "user": user
+        }),
     )
 
 
 @router.post("/v1/auth/refresh-token", response_model=AccessTokenResponseModel)
 def refresh_token_api(refresh_token: str):
     """
-    This refresh-token API allow you to obtain new access token.
+    API làm mới access token bằng refresh token.
     """
     new_token = auth_handler.refresh_token(refresh_token)
     return JSONResponse(

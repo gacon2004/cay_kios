@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from database.connector import DatabaseConnector
 from auth.provider import AuthProvider
-from patient.models.models import PatientUpdateRequestModel
+from patients.models.models import PatientUpdateRequestModel
 
 auth_handler = AuthProvider()
 database = DatabaseConnector()
@@ -55,20 +55,9 @@ def get_all_patients(limit: int = 10, offset: int = 0) -> list[dict]:
     )
     return patients
 def get_patients_by_national_id(national_id: str) -> list[dict]:
-    return database.query_get(
-        """
-        SELECT
-            id,
-            national_id,
-            full_name,
-            date_of_birth,
-            gender,
-            phone,
-            occupation,
-            ethnicity
-        FROM patients
-        WHERE national_id = %s
-        """,
+    db = DatabaseConnector()
+    return db.query_get(
+        "SELECT * FROM patients WHERE national_id = %s",
         (national_id,),
     )
 def get_patient_by_id(id: int) -> dict:

@@ -3,14 +3,14 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.security import HTTPBearer
 from fastapi.responses import JSONResponse
 from auth.provider import AuthProvider, AuthUser
-from patient.models.models import PatientUpdateRequestModel
+from patients.models.models import PatientUpdateRequestModel
 
-from patient.controllers.controllers import (
+from patients.controllers.controllers import (
     update_patient,
     get_all_patients,
     get_patient_by_id,
 )
-from patient.models.models import (
+from patients.models.models import (
     PatientUpdateRequestModel,
     PatientResponseModel,
 )
