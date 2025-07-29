@@ -1,62 +1,61 @@
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
-from backend.auth.provider import AuthProvider
-from backend.auth.controllers import (
-    register_user,
-    signin_user,
-)
+
 from backend.auth.models import (
     UserAuthResponseModel,
-    SignInRequestModel,
+    CCCDRequestModel,
     SignUpRequestModel,
     AccessTokenResponseModel,
 )
+from backend.auth.provider import AuthProvider
+from backend.auth.controllers import (
+    issue_token_by_cccd,
+    register_patient,
+)
+from backend.database.connector import DatabaseConnector
 
-router = APIRouter()
+router = APIRouter(prefix="/auth/patient", tags=["Patient Auth"])
 auth_handler = AuthProvider()
 
 
-@router.post("/v1/auth/signup", response_model=UserAuthResponseModel)
-def signup_api(user_details: SignUpRequestModel):
+@router.post("/token-by-cccd", response_model=UserAuthResponseModel)
+def token_by_cccd(user_cccd: CCCDRequestModel):
     """
-    API đăng ký tài khoản mới bằng CCCD/CMND.
+    Bệnh nhân đăng nhập bằng CCCD — nếu chưa có thì trả lỗi.
     """
-    user = register_user(user_details)  # user trả về phải chứa "id", "national_id", "full_name"
-    access_token = auth_handler.create_access_token(user_id=user["id"])
+    result = issue_token_by_cccd(user_cccd.national_id)
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=jsonable_encoder(result)
+    )
+
+
+@router.post("/register", response_model=UserAuthResponseModel)
+def patient_register(user_details: SignUpRequestModel):
+    """
+    Bệnh nhân đăng ký bằng form đầy đủ → lưu DB → trả access token.
+    """
+    user = register_patient(user_details)
+    access_token = auth_handler.create_access_token(user_id=user["id"], role="patient")
     refresh_token = auth_handler.encode_refresh_token(user["id"])
 
     return JSONResponse(
         status_code=status.HTTP_201_CREATED,
         content=jsonable_encoder({
-            "token": {"access_token": access_token, "refresh_token": refresh_token},
+            "token": {
+                "access_token": access_token,
+                "refresh_token": refresh_token
+            },
             "user": user
-        }),
+        })
     )
 
 
-@router.post("/v1/auth/signin", response_model=UserAuthResponseModel)
-def signin_api(user_details: SignInRequestModel):
-    """
-    API đăng nhập bằng CCCD/CMND và mật khẩu.
-    """
-    user = signin_user(user_details.national_id, user_details.password)
-    access_token = auth_handler.create_access_token(user_id=user.id)
-    refresh_token = auth_handler.encode_refresh_token(user.id)
-
-    return JSONResponse(
-        status_code=status.HTTP_200_OK,
-        content=jsonable_encoder({
-            "token": {"access_token": access_token, "refresh_token": refresh_token},
-            "user": user
-        }),
-    )
-
-
-@router.post("/v1/auth/refresh-token", response_model=AccessTokenResponseModel)
+@router.post("/refresh-token", response_model=AccessTokenResponseModel)
 def refresh_token_api(refresh_token: str):
     """
-    API làm mới access token bằng refresh token.
+    Làm mới access token bằng refresh token.
     """
     new_token = auth_handler.refresh_token(refresh_token)
     return JSONResponse(

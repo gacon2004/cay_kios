@@ -3,17 +3,12 @@ from backend.patients.models import PatientResponseModel
 from typing import Optional
 from datetime import date
 
-
-#  Dùng CCCD/CMND để đăng nhập
-class SignInRequestModel(BaseModel):
+class CCCDRequestModel(BaseModel):
     national_id: str
-    password: str
-
 
 #  Dùng CCCD/CMND để đăng ký
 class SignUpRequestModel(BaseModel):
     national_id: str
-    password: str
     full_name: str
     date_of_birth: Optional[date] = None
     gender: Optional[str] = None

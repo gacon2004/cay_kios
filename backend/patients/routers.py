@@ -9,6 +9,8 @@ from backend.patients.controllers import (
     update_patient,
     get_all_patients,
     get_patient_by_id,
+    get_patient_profile,
+    get_patients_by_national_id
 )
 from backend.patients.models import (
     PatientUpdateRequestModel,
@@ -19,6 +21,9 @@ router = APIRouter()
 OAuth2 = HTTPBearer()
 auth_handler = AuthProvider()
 
+@router.get("/patients/me", response_model=PatientResponseModel)
+def get_me(current_user: AuthUser = Depends(auth_handler.get_current_user)):
+    return get_patient_profile(current_user)
 
 @router.get("/v1/patients", response_model=list[PatientResponseModel])
 def get_all_patients_api(

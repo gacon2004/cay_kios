@@ -1,85 +1,77 @@
 from fastapi import HTTPException, status
 from backend.database.connector import DatabaseConnector
 from backend.auth.provider import AuthProvider
-from backend.auth.models import SignUpRequestModel
-from backend.patients.controllers import get_patients_by_national_id
+from backend.patients.models import PatientResponseModel
+from backend.auth.models import SignUpRequestModel, UserAuthResponseModel, TokenModel
 
 auth_handler = AuthProvider()
 
-
-def register_user(patient_model: SignUpRequestModel):
+def register_patient(data: SignUpRequestModel) -> UserAuthResponseModel:
     db = DatabaseConnector()
 
-    # Kiểm tra national_id đã tồn tại chưa
-    existing = get_patients_by_national_id(patient_model.national_id)
-    if len(existing) != 0:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="CCCD/CMND đã tồn tại trong hệ thống"
-        )
-
-    hashed_password = auth_handler.get_password_hash(patient_model.password)
+    existing = db.query_get(
+        "SELECT id FROM patients WHERE national_id = %s",
+        (data.national_id,)
+    )
+    if existing:
+        raise HTTPException(status_code=409, detail="Bệnh nhân đã tồn tại")
 
     db.query_put(
         """
         INSERT INTO patients (
-            national_id,
-            full_name,
-            date_of_birth,
-            gender,
-            phone,
-            occupation,
-            ethnicity,
-            password_hash
-        )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            national_id, full_name, date_of_birth,
+            gender, phone, occupation, ethnicity
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s)
         """,
         (
-            patient_model.national_id,
-            patient_model.full_name,
-            patient_model.date_of_birth,
-            patient_model.gender,
-            patient_model.phone,
-            patient_model.occupation,
-            patient_model.ethnicity,
-            hashed_password,
-        ),
+            data.national_id,
+            data.full_name,
+            data.date_of_birth,
+            data.gender,
+            data.phone,
+            data.occupation,
+            data.ethnicity,
+        )
     )
 
-    return {
-        "national_id": patient_model.national_id,
-        "full_name": patient_model.full_name,
-    }
+    user = db.query_get(
+        "SELECT id, national_id, full_name, date_of_birth, gender, phone, occupation, ethnicity FROM patients WHERE national_id = %s",
+        (data.national_id,)
+    )[0]
 
+    access_token = auth_handler.create_access_token(user_id=user["id"], role="patient")
+    refresh_token = auth_handler.encode_refresh_token(user["id"])
 
-def signin_user(national_id: str, password: str):
+    return UserAuthResponseModel(
+        token=TokenModel(
+            access_token=access_token,
+            refresh_token=refresh_token
+        ),
+        user=PatientResponseModel(**user)
+    )
+
+def issue_token_by_cccd(national_id: str) -> UserAuthResponseModel:
     db = DatabaseConnector()
 
     user = db.query_get(
-        """
-        SELECT * FROM patients WHERE national_id = %s
-        """,
-        (national_id,),
+        "SELECT id, national_id, full_name FROM patients WHERE national_id = %s",
+        (national_id,)
     )
 
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="CCCD/CMND không tồn tại"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bệnh nhân chưa đăng ký"
         )
 
-    patient = user[0]
-
-    if not auth_handler.verify_password(password, patient["password_hash"]):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Sai mật khẩu"
-        )
-
-    # Tạo access token
-    token = auth_handler.create_access_token(patient["id"])
+    user = user[0]
+    access_token = auth_handler.create_access_token(user_id=user["id"], role="patient")
+    refresh_token = auth_handler.encode_refresh_token(user["id"])
 
     return {
-        "access_token": token,
-        "token_type": "bearer"
+        "token": {
+            "access_token": access_token,
+            "refresh_token": refresh_token
+        },
+        "user": user
     }

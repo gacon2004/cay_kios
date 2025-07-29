@@ -1,11 +1,25 @@
 from fastapi import HTTPException, status
 from backend.database.connector import DatabaseConnector
-from backend.auth.provider import AuthProvider
+from backend.auth.provider import AuthProvider, AuthUser
 from backend.patients.models import PatientUpdateRequestModel
 
 auth_handler = AuthProvider()
 database = DatabaseConnector()
 
+def get_patient_profile(current_user: AuthUser) -> dict:
+    db = DatabaseConnector()
+    patient = db.query_get(
+        """
+        SELECT id, national_id, full_name, date_of_birth, gender, phone,
+               occupation, ethnicity, created_at
+        FROM patients
+        WHERE id = %s
+        """,
+        (current_user.id,)
+    )
+    if not patient:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy bệnh nhân")
+    return patient[0]
 
 def update_patient(patient_model: PatientUpdateRequestModel) -> int:
     # Kiểm tra national_id đã tồn tại chưa
