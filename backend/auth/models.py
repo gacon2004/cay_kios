@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from patients.models.models import PatientResponseModel
+from backend.patients.models import PatientResponseModel
 from typing import Optional
 from datetime import date
 

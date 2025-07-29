@@ -2,15 +2,15 @@ from fastapi import APIRouter, Depends, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import HTTPBearer
 from fastapi.responses import JSONResponse
-from auth.provider import AuthProvider, AuthUser
-from patients.models.models import PatientUpdateRequestModel
+from backend.auth.provider import AuthProvider, AuthUser
+from backend.patients.models import PatientUpdateRequestModel
 
-from patients.controllers.controllers import (
+from backend.patients.controllers import (
     update_patient,
     get_all_patients,
     get_patient_by_id,
 )
-from patients.models.models import (
+from backend.patients.models import (
     PatientUpdateRequestModel,
     PatientResponseModel,
 )
