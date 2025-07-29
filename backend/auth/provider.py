@@ -9,6 +9,7 @@ from pydantic import BaseModel
 import os
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 # Token route
@@ -26,9 +27,11 @@ USER_NOT_FOUND_EXCEPTION = HTTPException(
     detail="Không tìm thấy người dùng",
 )
 
+
 # Token payload structure
 class TokenData(BaseModel):
     national_id: Optional[str] = None
+
 
 # Authenticated user info (you can extend if needed)
 class AuthUser(BaseModel):
@@ -91,7 +94,9 @@ class AuthProvider:
 
     def refresh_token(self, refresh_token: str) -> str:
         try:
-            payload = jwt.decode(refresh_token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
+            payload = jwt.decode(
+                refresh_token, self.SECRET_KEY, algorithms=[self.ALGORITHM]
+            )
             if payload["scope"] == "refresh_token":
                 user_id = int(payload["sub"])
                 return self.create_access_token(user_id)
@@ -130,7 +135,9 @@ class AuthProvider:
             raise USER_NOT_FOUND_EXCEPTION
         return user[0]
 
-    def get_user_by_national_id(self, national_id: str, db_connector: DatabaseConnector) -> dict:
+    def get_user_by_national_id(
+        self, national_id: str, db_connector: DatabaseConnector
+    ) -> dict:
         user = db_connector.query_get(
             """
             SELECT id, national_id, full_name, password_hash
