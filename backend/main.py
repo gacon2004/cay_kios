@@ -1,11 +1,9 @@
 from fastapi import FastAPI
-
 from fastapi.middleware.cors import CORSMiddleware
-from patients.routers.routers import router as user_router
-from auth.routers import router as auth_router
+from backend.patients.routers.routers import router as user_router
+from backend.auth.routers import router as auth_router
 from dotenv import load_dotenv
 import os
-
 
 load_dotenv()
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
@@ -23,9 +21,6 @@ app = FastAPI(
     openapi_url="/v1/openapi.json",
 )
 
-
-
-
 # Set CORS
 origins = [
     "http://localhost",
@@ -34,7 +29,6 @@ origins = [
     "http://localhost:3001",
     "http://localhost:4000",
     "http://localhost:19006",
-    # Add your frontend URL here...
 ]
 
 # Set middleware
@@ -46,18 +40,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-"""
-Auth APIs
-Provides sign-up, sign-in, and refresh-token APIs.
-"""
-
+# Auth APIs
 app.include_router(auth_router)
 
-
-"""
-User APIs
-Provides user CRUD APIs.
-"""
-
+# User APIs
 app.include_router(user_router)
