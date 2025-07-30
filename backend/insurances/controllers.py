@@ -1,6 +1,6 @@
 from fastapi import HTTPException
-from backend.database.connector import DatabaseConnector
-from backend.insurances.models import InsuranceCreateModel
+from database.connector import DatabaseConnector
+from insurances.models import InsuranceCreateModel
 
 def check_insurance_by_cccd(national_id: str) -> bool:
     db = DatabaseConnector()
@@ -16,7 +16,7 @@ def get_all_insurances():
 
 def create_insurance(data: InsuranceCreateModel):
     db = DatabaseConnector()
-    
+
     # Check duplicate
     existing = db.query_get(
         "SELECT id FROM insurances WHERE national_id = %s",

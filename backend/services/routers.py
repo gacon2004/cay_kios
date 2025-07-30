@@ -1,14 +1,14 @@
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
-from backend.services.models import ServiceWithClinicsModel
-from backend.services.controllers import get_services_with_clinics_doctors
+from services.models import ServiceWithClinicsModel
+from services.controllers import get_services_with_clinics_doctors
 
-from backend.services.controllers import (
+from services.controllers import (
     get_all_services, get_service_by_id,
     create_service, update_service, delete_service
 )
-from backend.services.models import (
+from services.models import (
     ServiceCreateModel, ServiceUpdateModel, ServiceResponseModel
 )
 

@@ -2,18 +2,18 @@ from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 
-from backend.auth.models import (
+from auth.models import (
     UserAuthResponseModel,
     CCCDRequestModel,
     SignUpRequestModel,
     AccessTokenResponseModel,
 )
-from backend.auth.provider import AuthProvider
-from backend.auth.controllers import (
+from auth.provider import AuthProvider
+from auth.controllers import (
     issue_token_by_cccd,
     register_patient,
 )
-from backend.database.connector import DatabaseConnector
+from database.connector import DatabaseConnector
 
 router = APIRouter(prefix="/auth/patient", tags=["Patient Auth"])
 auth_handler = AuthProvider()

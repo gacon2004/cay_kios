@@ -1,6 +1,6 @@
 from fastapi import HTTPException, status
-from backend.database.connector import DatabaseConnector
-from backend.appointments.models import AppointmentCreateModel
+from database.connector import DatabaseConnector
+from appointments.models import AppointmentCreateModel
 from datetime import datetime
 import qrcode
 import base64

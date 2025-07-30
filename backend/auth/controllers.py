@@ -1,8 +1,8 @@
 from fastapi import HTTPException, status
-from backend.database.connector import DatabaseConnector
-from backend.auth.provider import AuthProvider
-from backend.patients.models import PatientResponseModel
-from backend.auth.models import SignUpRequestModel, UserAuthResponseModel, TokenModel
+from database.connector import DatabaseConnector
+from auth.provider import AuthProvider
+from patients.models import PatientResponseModel
+from auth.models import SignUpRequestModel, UserAuthResponseModel, TokenModel
 
 auth_handler = AuthProvider()
 

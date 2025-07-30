@@ -1,12 +1,12 @@
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
-from backend.insurances.controllers import (
+from insurances.controllers import (
     check_insurance_by_cccd,
     get_all_insurances,
     create_insurance,
     delete_insurance_by_id
 )
-from backend.insurances.models import InsuranceCheckResponseModel, InsuranceCreateModel
+from insurances.models import InsuranceCheckResponseModel, InsuranceCreateModel
 
 router = APIRouter(prefix="/insurances", tags=["Insurances"])
 

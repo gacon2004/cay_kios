@@ -1,6 +1,6 @@
 from fastapi import HTTPException, status
-from backend.database.connector import DatabaseConnector
-from backend.services.models import ServiceCreateModel, ServiceUpdateModel
+from database.connector import DatabaseConnector
+from services.models import ServiceCreateModel, ServiceUpdateModel
 
 db = DatabaseConnector()
 

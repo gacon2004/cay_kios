@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
-from backend.database.connector import DatabaseConnector
-from backend.auth.provider import AuthProvider
-from backend.users.models import UserSignUpRequestModel
+from database.connector import DatabaseConnector
+from auth.provider import AuthProvider
+from users.models import UserSignUpRequestModel
 
 
 auth_handler = AuthProvider()

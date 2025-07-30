@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from typing import Annotated, Optional
-from backend.database.connector import DatabaseConnector
+from database.connector import DatabaseConnector
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt

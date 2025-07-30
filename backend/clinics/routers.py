@@ -1,13 +1,13 @@
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
-from backend.clinics.models import (
+from clinics.models import (
     ClinicCreateModel,
     ClinicUpdateModel,
     ClinicResponseModel,
     ClinicDoctorResponseModel,
 )
-from backend.clinics.controllers import (
+from clinics.controllers import (
     get_all_clinics,
     get_clinic_by_id,
     create_clinic,

@@ -1,9 +1,9 @@
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
-from backend.auth.provider import AuthProvider
-from backend.users.controllers import register_user, signin_user
-from backend.users.models import (
+from auth.provider import AuthProvider
+from users.controllers import register_user, signin_user
+from users.models import (
     UserAuthResponseModel,
     SignInRequestModel,
     UserSignUpRequestModel,

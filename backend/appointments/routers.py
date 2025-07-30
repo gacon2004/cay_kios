@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends
 from typing import Annotated
 
-from backend.auth.provider import AuthProvider
-from backend.appointments.models import (
+from auth.provider import AuthProvider
+from appointments.models import (
     AppointmentCreateModel,
     AppointmentResponseModel
 )
-from backend.appointments.controllers import (
+from appointments.controllers import (
     create_appointment,
     get_my_appointments
 )
