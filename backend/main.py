@@ -27,6 +27,10 @@ app = FastAPI(
     openapi_url="/v1/openapi.json",
 )
 
+@app.get("/")
+def root():
+    return {"message": "Cay KIOS API is running!"}
+
 # Set CORS
 origins = [
     "http://localhost",
