@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Phiếu Khám Bệnh</title>
+</head>
+<body>
+    <h2 style="text-align: center;">PHIẾU KHÁM BỆNH</h2>
+    <p><strong>Mã lịch hẹn:</strong> {{ data.id }}</p>
+    <p><strong>Bệnh nhân:</strong> {{ data.patient_name }}</p>
+    <p><strong>Bác sĩ:</strong> {{ data.doctor_name }}</p>
+    <p><strong>Phòng khám:</strong> {{ data.clinic_name }}</p>
+    <p><strong>Dịch vụ:</strong> {{ data.service_name }} - {{ data.service_price }} VNĐ</p>
+    <p><strong>Thời gian:</strong> {{ data.appointment_time }}</p>
+    <p><strong>STT:</strong> {{ data.queue_number }}</p>
+    <img src="data:image/png;base64,{{ data.qr_code }}" alt="QR Code" width="120">
+    <p><em>Vui lòng mang theo phiếu này đến quầy tiếp nhận.</em></p>
+</body>
+</html>

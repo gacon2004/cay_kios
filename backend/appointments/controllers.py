@@ -4,6 +4,9 @@ from appointments.models import AppointmentCreateModel
 from datetime import datetime
 import qrcode
 import base64
+import pdfkit
+from jinja2 import Environment, FileSystemLoader
+
 from io import BytesIO
 
 db = DatabaseConnector()
@@ -103,3 +106,30 @@ def get_my_appointments(patient_id: int) -> list[dict]:
         ORDER BY a.appointment_time DESC
     """
     return db.query_get(sql, (patient_id,))
+
+TEMPLATE_DIR = "backend/templates"
+STATIC_DIR = "backend/static/qr"
+env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
+
+def print_appointment_to_pdf(appointment_id: int) -> str:
+    sql = """
+        SELECT a.*, s.name AS service_name, s.price AS service_price,
+               d.full_name AS doctor_name, c.name AS clinic_name, p.full_name AS patient_name
+        FROM appointments a
+        JOIN services s ON a.service_id = s.id
+        JOIN doctors d ON a.doctor_id = d.id
+        JOIN clinics c ON a.clinic_id = c.id
+        JOIN patients p ON a.patient_id = p.id
+        WHERE a.id = %s
+    """
+    result = db.query_get(sql, (appointment_id,))
+    if not result:
+        raise HTTPException(status_code=404, detail="Không tìm thấy lịch hẹn")
+    data = result[0]
+    # Dùng base64 trực tiếp
+    template = env.get_template("appointment_receipt.html")
+    html = template.render(data=data)
+    pdf_path = f"{STATIC_DIR}/phieu_kham_{appointment_id}.pdf"
+    pdfkit.from_string(html, pdf_path)
+    db.query_put("UPDATE appointments SET printed = 1 WHERE id = %s", (appointment_id,))
+    return pdf_path

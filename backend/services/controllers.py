@@ -42,7 +42,7 @@ def get_services_with_clinics_doctors() -> list[dict]:
     db = DatabaseConnector()
 
     sql = """
-        SELECT 
+        SELECT
             s.id AS service_id, s.name AS service_name, s.description, s.price,
             c.id AS clinic_id, c.name AS clinic_name, c.status,
             d.id AS doctor_id, d.full_name AS doctor_name
