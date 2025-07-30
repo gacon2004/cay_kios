@@ -1,28 +1,24 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import Optional
 
-
-class SignInRequestModel(BaseModel):
-    username: str
-    password: str
-
-
-class UserSignUpRequestModel(BaseModel):
+class UserCreateModel(BaseModel):
     username: str
     password: str
     full_name: str
-    role: Optional[str] = "admin"  # hoặc "receptionist"
+    email: EmailStr
+    phone: str
+    role: str
 
+class UserUpdateModel(BaseModel):
+    full_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    role: Optional[str] = None
 
-class TokenModel(BaseModel):
-    access_token: str
-    refresh_token: Optional[str] = None
-
-
-class UserAuthResponseModel(BaseModel):
-    token: TokenModel
-    user: dict
-
-
-class AccessTokenResponseModel(BaseModel):
-    access_token: str
+class UserResponseModel(BaseModel):
+    id: int
+    username: str
+    full_name: str
+    email: EmailStr
+    phone: str
+    role: str

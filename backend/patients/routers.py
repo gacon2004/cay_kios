@@ -24,7 +24,7 @@ auth_handler = AuthProvider()
 router = APIRouter(prefix="/patients", tags=["Patients"])
 
 @router.get("/me", response_model=PatientResponseModel)
-def get_me(current_user: AuthUser = Depends(auth_handler.get_current_user)):
+def get_me(current_user: AuthUser = Depends(auth_handler.get_current_patient_user)):
     return get_patient_profile(current_user)
 
 @router.get("/", response_model=list[PatientResponseModel])
@@ -41,7 +41,7 @@ def get_all_patients_api(
 @router.get("/{patient_id}", response_model=PatientResponseModel)
 def get_patient_api(
     patient_id: int,
-    current_user: AuthUser = Depends(auth_handler.get_current_user),
+    current_user: AuthUser = Depends(auth_handler.get_current_admin_user),
 ):
     """
     Lấy thông tin chi tiết của một bệnh nhân theo ID.
@@ -54,7 +54,7 @@ def get_patient_api(
 def update_patient_api(
     patient_id: int,
     patient_details: PatientUpdateRequestModel,
-    current_user: AuthUser = Depends(auth_handler.get_current_user),
+    current_user: AuthUser = Depends(auth_handler.get_current_patient_user),
 ):
     """
     Cập nhật thông tin bệnh nhân theo ID.

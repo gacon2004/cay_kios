@@ -2,11 +2,12 @@ from fastapi import HTTPException, status
 from backend.database.connector import DatabaseConnector
 from backend.auth.provider import AuthProvider
 from backend.patients.models import PatientResponseModel
-from backend.auth.models import SignUpRequestModel, UserAuthResponseModel, TokenModel
+from backend.auth.token_models import UserAuthResponseModel, TokenModel
+from backend.auth.models.patient_models import PatientSignUpRequestModel
 
 auth_handler = AuthProvider()
 
-def register_patient(data: SignUpRequestModel) -> UserAuthResponseModel:
+def register_patient(data: PatientSignUpRequestModel) -> UserAuthResponseModel:
     db = DatabaseConnector()
 
     existing = db.query_get(

@@ -15,7 +15,7 @@ def get_patient_profile(current_user: AuthUser) -> dict:
         FROM patients
         WHERE id = %s
         """,
-        (current_user.id,)
+        (current_user["id"])
     )
     if not patient:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy bệnh nhân")

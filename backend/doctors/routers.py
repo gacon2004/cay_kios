@@ -30,9 +30,9 @@ def get_all_doctors_api():
 
 
 @router.get("/{doctor_id}", response_model=DoctorResponseModel)
-def get_doctor_api(
+async def get_doctor_api(
     doctor_id: int,
-    current_user: AuthUser = Depends(auth_handler.get_current_user),
+    current_user: dict = Depends(auth_handler.get_current_admin_user),
 ):
     doctor = get_doctor_by_id(doctor_id)
     return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(doctor))
@@ -41,7 +41,7 @@ def get_doctor_api(
 @router.post("/", response_model=DoctorResponseModel, status_code=status.HTTP_201_CREATED)
 def create_doctor_api(
     doctor_data: DoctorCreateRequestModel,
-    current_user: AuthUser = Depends(auth_handler.get_current_user),
+    current_user: AuthUser = Depends(auth_handler.get_current_admin_user),
 ):
     new_id = create_doctor(doctor_data)
     created = get_doctor_by_id(new_id)
@@ -52,7 +52,7 @@ def create_doctor_api(
 def update_doctor_api(
     doctor_id: int,
     doctor_details: DoctorUpdateRequestModel,
-    current_user: AuthUser = Depends(auth_handler.get_current_user),
+    current_user: AuthUser = Depends(auth_handler.get_current_admin_user),
 ):
     if doctor_id != doctor_details.id:
         return JSONResponse(
@@ -68,7 +68,7 @@ def update_doctor_api(
 @router.delete("/{doctor_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_doctor_api(
     doctor_id: int,
-    current_user: AuthUser = Depends(auth_handler.get_current_user),
+    current_user: AuthUser = Depends(auth_handler.get_current_admin_user),
 ):
     delete_doctor(doctor_id)
     return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=None)

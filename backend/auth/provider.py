@@ -26,6 +26,11 @@ OAUTH2_SCHEME_PATIENT = OAuth2PasswordBearer(
     scheme_name="PatientAuth"              # Tên scheme sẽ hiển thị trong Swagger UI
 )
 
+OAUTH2_SCHEME_DOCTOR = OAuth2PasswordBearer(
+    tokenUrl="/auth/doctor-signin",  # Endpoint dành cho đăng nhập bác sĩ
+    scheme_name="DoctorAuth"
+)
+
 # Exception definitions - Rất tốt, dùng chung và nhất quán
 CREDENTIALS_EXCEPTION = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -53,6 +58,13 @@ class AuthUser(BaseModel):
 
 # AdminUser (Model cho Admin/Lễ tân đã xác thực)
 class AdminUser(BaseModel):
+    id: int
+    username: str
+    full_name: str
+    role: str
+
+# DoctorUser
+class DoctorUser(BaseModel):
     id: int
     username: str
     full_name: str
@@ -90,6 +102,18 @@ class AuthProvider:
             id=user["id"],
             full_name=user["full_name"],
             national_id=user["national_id"],
+        )
+    
+    def authenticate_doctor(self, username: str, password: str) -> DoctorUser:
+        db = DatabaseConnector()
+        user = self.get_doctor_user_by_username(username, db)
+        if not self.verify_password(password, user["password_hash"]):
+            raise CREDENTIALS_EXCEPTION
+        return DoctorUser(
+            id=user["id"],
+            username=user["username"],
+            full_name=user["full_name"],
+            role=user["role"]
         )
 
     # role="patient" làm mặc định là vấn đề đã thảo luận
@@ -154,9 +178,30 @@ class AuthProvider:
             payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
             user_id = int(payload.get("sub"))
             role = payload.get("role")
-            if not user_id or role not in ("admin", "receptionist"):
+            if not user_id or role not in ("patient", "receptionist"):
                 raise CREDENTIALS_EXCEPTION
             user = self.get_admin_user_by_id(user_id, db)
+            return {
+                "id": user["id"],
+                "username": user["username"],
+                "full_name": user["full_name"],
+                "role": user["role"],
+            }
+        except JWTError:
+            raise CREDENTIALS_EXCEPTION
+        
+    # Hàm get_current_doctor_user
+    async def get_current_doctor_user(
+    self, token: Annotated[str, Depends(OAUTH2_SCHEME_DOCTOR)]
+    ) -> dict:
+        db = DatabaseConnector()
+        try:
+            payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
+            user_id = int(payload.get("sub"))
+            role = payload.get("role")
+            if not user_id or role != "doctor":
+                raise CREDENTIALS_EXCEPTION
+            user = self.get_doctor_user_by_id(user_id, db)
             return {
                 "id": user["id"],
                 "username": user["username"],
@@ -223,3 +268,28 @@ class AuthProvider:
             raise USER_NOT_FOUND_EXCEPTION
         return user[0]
 
+    def get_doctor_user_by_username(self, username: str, db: DatabaseConnector) -> dict:
+        user = db.query_get(
+            """
+            SELECT id, username, full_name, password_hash, role
+            FROM users
+            WHERE username = %s AND role = 'doctor'
+            """,
+            (username,),
+        )
+        if not user:
+            raise USER_NOT_FOUND_EXCEPTION
+        return user[0]
+    
+    def get_doctor_user_by_id(self, user_id: int, db: DatabaseConnector) -> dict:
+        user = db.query_get(
+            """
+            SELECT id, username, full_name, role
+            FROM users
+            WHERE id = %s AND role = 'doctor'
+            """,
+            (user_id,),
+        )
+        if not user:
+            raise USER_NOT_FOUND_EXCEPTION
+        return user[0]

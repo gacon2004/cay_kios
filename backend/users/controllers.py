@@ -1,53 +1,71 @@
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 from backend.database.connector import DatabaseConnector
 from backend.auth.provider import AuthProvider
-from backend.users.models import UserSignUpRequestModel
-
+from backend.users.models import UserCreateModel, UserUpdateModel
 
 auth_handler = AuthProvider()
 
-def register_user(user_model: UserSignUpRequestModel):
+def get_all_users():
     db = DatabaseConnector()
+    return db.query_get("SELECT id, username, full_name, email, phone, role FROM users")
 
-    existing = db.query_get(
-        "SELECT * FROM users WHERE username = %s", (user_model.username,)
+def get_user_by_id(user_id: int):
+    db = DatabaseConnector()
+    user = db.query_get(
+        "SELECT id, username, full_name, email, phone, role FROM users WHERE id = %s", (user_id,)
     )
-    if existing:
-        raise HTTPException(status_code=409, detail="Tài khoản đã tồn tại")
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user[0]
 
-    hashed_password = auth_handler.get_password_hash(user_model.password)
+def create_user(user_data: UserCreateModel):
+    db = DatabaseConnector()
+    if db.query_get("SELECT id FROM users WHERE username = %s", (user_data.username,)):
+        raise HTTPException(status_code=409, detail="Username already exists")
+    
+    hashed_pw = auth_handler.get_password_hash(user_data.password)
 
     db.query_put(
         """
-        INSERT INTO users (username, full_name, password_hash, role)
-        VALUES (%s, %s, %s, %s)
+        INSERT INTO users (username, password_hash, full_name, email, phone, role)
+        VALUES (%s, %s, %s, %s, %s, %s)
         """,
-        (
-            user_model.username,
-            user_model.full_name,
-            hashed_password,
-            user_model.role,
-        ),
+        (user_data.username, hashed_pw, user_data.full_name, user_data.email, user_data.phone, user_data.role)
     )
 
-    user = db.query_get(
-        "SELECT id, username, full_name, role FROM users WHERE username = %s",
-        (user_model.username,),
-    )[0]
+    return get_user_by_username(user_data.username)
 
-    return user
-
-
-def signin_user(username: str, password: str):
+def get_user_by_username(username: str):
     db = DatabaseConnector()
+    user = db.query_get(
+        "SELECT id, username, full_name, email, phone, role FROM users WHERE username = %s",
+        (username,)
+    )
+    return user[0]
 
-    user = db.query_get("SELECT * FROM users WHERE username = %s", (username,))
-    if not user:
-        raise HTTPException(status_code=401, detail="Tài khoản không tồn tại")
+def update_user(user_id: int, update_data: UserUpdateModel):
+    db = DatabaseConnector()
+    user = get_user_by_id(user_id)  # raises if not found
 
-    user = user[0]
+    db.query_put(
+        """
+        UPDATE users
+        SET full_name = %s, email = %s, phone = %s, role = %s
+        WHERE id = %s
+        """,
+        (
+            update_data.full_name or user["full_name"],
+            update_data.email or user["email"],
+            update_data.phone or user["phone"],
+            update_data.role or user["role"],
+            user_id
+        )
+    )
 
-    if not auth_handler.verify_password(password, user["password_hash"]):
-        raise HTTPException(status_code=401, detail="Sai mật khẩu")
+    return get_user_by_id(user_id)
 
-    return user
+def delete_user(user_id: int):
+    db = DatabaseConnector()
+    get_user_by_id(user_id)  # raises if not found
+    db.query_put("DELETE FROM users WHERE id = %s", (user_id,))
+    return {"message": "User deleted"}
