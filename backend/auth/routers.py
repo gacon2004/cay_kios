@@ -18,8 +18,8 @@ from backend.database.connector import DatabaseConnector
 router = APIRouter(prefix="/auth/patient", tags=["Patient Auth"])
 auth_handler = AuthProvider()
 
-
-@router.post("/token-by-cccd", response_model=UserAuthResponseModel)
+# login bằng cccd khi đã tồn tại bn
+@router.post("/login_patient", response_model=UserAuthResponseModel)
 def token_by_cccd(user_cccd: CCCDRequestModel):
     """
     Bệnh nhân đăng nhập bằng CCCD — nếu chưa có thì trả lỗi.
@@ -37,18 +37,10 @@ def patient_register(user_details: SignUpRequestModel):
     Bệnh nhân đăng ký bằng form đầy đủ → lưu DB → trả access token.
     """
     user = register_patient(user_details)
-    access_token = auth_handler.create_access_token(user_id=user["id"], role="patient")
-    refresh_token = auth_handler.encode_refresh_token(user["id"])
 
     return JSONResponse(
         status_code=status.HTTP_201_CREATED,
-        content=jsonable_encoder({
-            "token": {
-                "access_token": access_token,
-                "refresh_token": refresh_token
-            },
-            "user": user
-        })
+        content=jsonable_encoder(user) # Trả về trực tiếp đối tượng auth_response
     )
 
 

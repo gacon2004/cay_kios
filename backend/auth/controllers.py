@@ -6,6 +6,7 @@ from backend.auth.models import SignUpRequestModel, UserAuthResponseModel, Token
 
 auth_handler = AuthProvider()
 
+# Đăng Ký bệnh nhân, cấp token khi vừa đăng ký
 def register_patient(data: SignUpRequestModel) -> UserAuthResponseModel:
     db = DatabaseConnector()
 
@@ -35,7 +36,7 @@ def register_patient(data: SignUpRequestModel) -> UserAuthResponseModel:
     )
 
     user = db.query_get(
-        "SELECT id, national_id, full_name, date_of_birth, gender, phone, occupation, ethnicity FROM patients WHERE national_id = %s",
+        "SELECT id, national_id, full_name, date_of_birth, gender, phone, occupation, ethnicity, created_at FROM patients WHERE national_id = %s",
         (data.national_id,)
     )[0]
 
@@ -49,6 +50,8 @@ def register_patient(data: SignUpRequestModel) -> UserAuthResponseModel:
         ),
         user=PatientResponseModel(**user)
     )
+
+# Đăng nhập, cấp token bằng cccd
 
 def issue_token_by_cccd(national_id: str) -> UserAuthResponseModel:
     db = DatabaseConnector()
