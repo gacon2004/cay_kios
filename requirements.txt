@@ -6,8 +6,8 @@ passlib[bcrypt]==1.7.4
 python-jose[cryptography]==3.3.0
 pydantic[email]
 jinja2
-<<<<<<< HEAD
+
 qrcode
 pillow==11.3.0
 qrcode[pil]
->>>>>>> 3984db3d0587bea7a18591d27f4e2c9494499a90
+
