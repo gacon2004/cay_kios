@@ -13,8 +13,9 @@ from backend.users.models import (
 router = APIRouter()
 auth_handler = AuthProvider()
 
+router = APIRouter(prefix="/auth/admin", tags=["Auth Admin"])
 
-@router.post("/auth/user-signup", response_model=UserAuthResponseModel)
+@router.post("/admin-signup", response_model=UserAuthResponseModel)
 def signup_user(user_details: UserSignUpRequestModel):
     user = register_user(user_details)
     access_token = auth_handler.create_access_token(user_id=user["id"])
@@ -29,7 +30,7 @@ def signup_user(user_details: UserSignUpRequestModel):
     )
 
 
-@router.post("/auth/user-signin", response_model=UserAuthResponseModel)
+@router.post("/admin-signin", response_model=UserAuthResponseModel)
 def signin_user_api(user_details: SignInRequestModel):
     user = signin_user(user_details.username, user_details.password)
     access_token = auth_handler.create_access_token(user_id=user["id"])
@@ -44,7 +45,7 @@ def signin_user_api(user_details: SignInRequestModel):
     )
 
 
-@router.post("/auth/user-refresh-token", response_model=AccessTokenResponseModel)
+@router.post("/admin-refresh-token", response_model=AccessTokenResponseModel)
 def refresh_token_api(refresh_token: str):
     new_token = auth_handler.refresh_token(refresh_token)
     return JSONResponse(

@@ -5,7 +5,7 @@ from backend.clinics.models import (
     ClinicCreateModel,
     ClinicUpdateModel,
     ClinicResponseModel,
-    ClinicDoctorResponseModel,
+    ClinicOut,
 )
 from backend.clinics.controllers import (
     get_all_clinics,
@@ -13,7 +13,7 @@ from backend.clinics.controllers import (
     create_clinic,
     update_clinic,
     delete_clinic,
-    get_clinics_by_service_id,
+    get_clinics_by_service,
 )
 
 router = APIRouter(prefix="/clinics", tags=["Clinics"])
@@ -47,6 +47,6 @@ def remove_clinic(clinic_id: int):
     return JSONResponse(status_code=204, content={})
 
 
-@router.get("/by-service/{service_id}", response_model=list[ClinicDoctorResponseModel])
-def list_clinics_by_service(service_id: int):
-    return jsonable_encoder(get_clinics_by_service_id(service_id))
+@router.get("/by-service/{service_id}", response_model=list[ClinicOut])
+def clinics_by_service(service_id: int):
+    return get_clinics_by_service(service_id)

@@ -21,14 +21,15 @@ router = APIRouter()
 OAuth2 = HTTPBearer()
 auth_handler = AuthProvider()
 
+router = APIRouter(prefix="/doctors", tags=["Doctors"])
 
-@router.get("/doctors", response_model=list[DoctorResponseModel])
+@router.get("/", response_model=list[DoctorResponseModel])
 def get_all_doctors_api():
     doctors = get_all_doctors()
     return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(doctors))
 
 
-@router.get("/doctors/{doctor_id}", response_model=DoctorResponseModel)
+@router.get("/{doctor_id}", response_model=DoctorResponseModel)
 def get_doctor_api(
     doctor_id: int,
     current_user: AuthUser = Depends(auth_handler.get_current_user),
@@ -37,7 +38,7 @@ def get_doctor_api(
     return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(doctor))
 
 
-@router.post("/doctors", response_model=DoctorResponseModel, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=DoctorResponseModel, status_code=status.HTTP_201_CREATED)
 def create_doctor_api(
     doctor_data: DoctorCreateRequestModel,
     current_user: AuthUser = Depends(auth_handler.get_current_user),
@@ -47,7 +48,7 @@ def create_doctor_api(
     return JSONResponse(status_code=status.HTTP_201_CREATED, content=jsonable_encoder(created))
 
 
-@router.put("/doctors/{doctor_id}", response_model=DoctorResponseModel)
+@router.put("/{doctor_id}", response_model=DoctorResponseModel)
 def update_doctor_api(
     doctor_id: int,
     doctor_details: DoctorUpdateRequestModel,
@@ -64,7 +65,7 @@ def update_doctor_api(
     return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(updated))
 
 
-@router.delete("/doctors/{doctor_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{doctor_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_doctor_api(
     doctor_id: int,
     current_user: AuthUser = Depends(auth_handler.get_current_user),

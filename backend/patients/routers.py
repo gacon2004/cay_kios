@@ -21,11 +21,13 @@ router = APIRouter()
 OAuth2 = HTTPBearer()
 auth_handler = AuthProvider()
 
-@router.get("/patients/me", response_model=PatientResponseModel)
+router = APIRouter(prefix="/patients", tags=["Patients"])
+
+@router.get("/me", response_model=PatientResponseModel)
 def get_me(current_user: AuthUser = Depends(auth_handler.get_current_user)):
     return get_patient_profile(current_user)
 
-@router.get("/patients", response_model=list[PatientResponseModel])
+@router.get("/", response_model=list[PatientResponseModel])
 def get_all_patients_api(
     # current_user: AuthUser = Depends(auth_handler.get_current_user),
 ):
@@ -36,7 +38,7 @@ def get_all_patients_api(
     return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(patients))
 
 
-@router.get("/patients/{patient_id}", response_model=PatientResponseModel)
+@router.get("/{patient_id}", response_model=PatientResponseModel)
 def get_patient_api(
     patient_id: int,
     current_user: AuthUser = Depends(auth_handler.get_current_user),
@@ -48,7 +50,7 @@ def get_patient_api(
     return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(patient))
 
 
-@router.put("/patients/{patient_id}", response_model=PatientResponseModel)
+@router.put("/{patient_id}", response_model=PatientResponseModel)
 def update_patient_api(
     patient_id: int,
     patient_details: PatientUpdateRequestModel,

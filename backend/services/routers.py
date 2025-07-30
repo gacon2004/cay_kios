@@ -1,8 +1,6 @@
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
-from backend.services.models import ServiceWithClinicsModel
-from backend.services.controllers import get_services_with_clinics_doctors
 
 from backend.services.controllers import (
     get_all_services, get_service_by_id,
@@ -17,10 +15,6 @@ router = APIRouter(prefix="/services", tags=["Services"])
 @router.get("/", response_model=list[ServiceResponseModel])
 def api_get_all_services():
     return get_all_services()
-
-@router.get("/with-clinics-doctors", response_model=list[ServiceWithClinicsModel])
-def get_services_nested():
-    return get_services_with_clinics_doctors()
 
 @router.get("/{service_id}", response_model=ServiceResponseModel)
 def api_get_service_by_id(service_id: int):

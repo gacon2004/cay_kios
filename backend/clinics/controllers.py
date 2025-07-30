@@ -39,9 +39,26 @@ def update_clinic(clinic_id: int, data: ClinicUpdateModel) -> dict:
 def delete_clinic(clinic_id: int) -> None:
     db.query_put("DELETE FROM clinics WHERE id = %s", (clinic_id,))
 
-def get_clinics_by_service_id(service_id: int) -> list[dict]:
-    return db.query_get("""
-        SELECT c.* FROM clinics c
-        JOIN clinic_service_map m ON c.id = m.clinic_id
-        WHERE m.service_id = %s
-    """, (service_id,))
+def get_clinics_by_service(service_id: int):
+    sql = """
+        SELECT 
+            c.id AS clinic_id,
+            c.name AS clinic_name,
+            c.status AS clinic_status,
+            d.id AS doctor_id,
+            d.full_name AS doctor_name,
+            d.specialty,
+            d.phone
+        FROM clinics c
+        JOIN clinic_doctor_assignments cda ON c.id = cda.clinic_id
+        JOIN doctors d ON cda.doctor_id = d.id
+        WHERE c.service_id = %s 
+    """
+    try:
+        rows = db.query_get(sql, (service_id,))
+        return rows
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch clinics by service: " + str(e),
+        )

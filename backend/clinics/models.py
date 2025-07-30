@@ -25,3 +25,21 @@ class ClinicResponseModel(BaseModel):
 class ClinicDoctorResponseModel(ClinicResponseModel):
     # Bổ sung nếu cần show cả bác sĩ trong phòng
     pass
+
+class DoctorOut(BaseModel):
+    doctor_id: int
+    doctor_name: str
+    specialty: str
+    phone: str
+
+class ClinicOut(BaseModel):
+    clinic_id: int
+    clinic_name: str
+    clinic_status: str
+    doctor_id: int
+    doctor_name: str
+    specialty: str
+    phone: str
+
+    class Config:
+        from_attributes = True
