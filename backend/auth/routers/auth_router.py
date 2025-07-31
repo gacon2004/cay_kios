@@ -10,7 +10,7 @@ from backend.auth.models.auth_models import (
     AccessTokenResponseModel,
 )
 
-router = APIRouter(prefix="/auth", tags=["Unified Auth"])
+router = APIRouter(prefix="/auth", tags=["Admin/Doctor Auth"])
 auth_handler = AuthProvider()
 
 @router.post("/signup", response_model=UserAuthResponseModel)

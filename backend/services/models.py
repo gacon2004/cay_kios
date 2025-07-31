@@ -17,6 +17,3 @@ class ServiceResponseModel(BaseModel):
     name: str
     description: Optional[str] = None
     price: int
-
-    class Config:
-        from_attributes = True

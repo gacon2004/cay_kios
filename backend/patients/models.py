@@ -37,6 +37,3 @@ class PatientResponseModel(BaseModel):
     occupation: Optional[str]
     ethnicity: Optional[str]
     created_at: Optional[datetime]
-
-    class Config:
-        from_attributes = True

@@ -40,6 +40,3 @@ class ClinicOut(BaseModel):
     doctor_name: str
     specialty: str
     phone: str
-
-    class Config:
-        from_attributes = True

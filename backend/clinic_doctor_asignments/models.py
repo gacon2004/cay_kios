@@ -12,6 +12,3 @@ class ClinicDoctorAssignmentUpdateRequest(ClinicDoctorAssignmentBase):
 
 class ClinicDoctorAssignmentResponse(ClinicDoctorAssignmentBase):
     id: int
-
-    class Config:
-        from_attributes = True
