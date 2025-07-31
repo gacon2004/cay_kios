@@ -1,13 +1,15 @@
 from fastapi import HTTPException, status
 from backend.database.connector import DatabaseConnector
-from backend.auth.provider import AuthProvider
+from backend.auth.providers.partient_provider import PatientProvider
 from backend.patients.models import PatientResponseModel
-from backend.auth.token_models import UserAuthResponseModel, TokenModel
-from backend.auth.models.patient_models import PatientSignUpRequestModel
+from backend.auth.models.patient_models import (
+    TokenModel,
+    PatientSignUpRequestModel,
+    PatientResponseModel
+)
+auth_handler = PatientProvider()
 
-auth_handler = AuthProvider()
-
-def register_patient(data: PatientSignUpRequestModel) -> UserAuthResponseModel:
+def register_patient(data: PatientSignUpRequestModel) -> PatientResponseModel:
     db = DatabaseConnector()
 
     existing = db.query_get(
@@ -43,7 +45,7 @@ def register_patient(data: PatientSignUpRequestModel) -> UserAuthResponseModel:
     access_token = auth_handler.create_access_token(user_id=user["id"], role="patient")
     refresh_token = auth_handler.encode_refresh_token(user["id"])
 
-    return UserAuthResponseModel(
+    return PatientResponseModel(
         token=TokenModel(
             access_token=access_token,
             refresh_token=refresh_token
@@ -51,7 +53,7 @@ def register_patient(data: PatientSignUpRequestModel) -> UserAuthResponseModel:
         user=PatientResponseModel(**user)
     )
 
-def issue_token_by_cccd(national_id: str) -> UserAuthResponseModel:
+def issue_token_by_cccd(national_id: str) -> PatientResponseModel:
     db = DatabaseConnector()
 
     user = db.query_get(

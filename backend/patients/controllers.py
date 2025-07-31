@@ -1,9 +1,9 @@
 from fastapi import HTTPException, status
 from backend.database.connector import DatabaseConnector
-from backend.auth.provider import AuthProvider, AuthUser
+from backend.auth.providers.partient_provider import PatientProvider, AuthUser
 from backend.patients.models import PatientUpdateRequestModel
 
-auth_handler = AuthProvider()
+auth_handler = PatientProvider()
 database = DatabaseConnector()
 
 def get_patient_profile(current_user: AuthUser) -> dict:

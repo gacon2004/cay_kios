@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.auth.routers.patient_router import router as auth_patient_router
-from backend.auth.routers.unified_router import router as auth_unified_router
+from backend.auth.routers.auth_router import router as auth_unified_router
 from backend.doctors.routers import router as doctor_router
 from backend.patients.routers import router as patient_router
 from backend.insurances.routers import router as insurance_router

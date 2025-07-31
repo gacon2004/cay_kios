@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import HTTPBearer
 from fastapi.responses import JSONResponse
-from backend.auth.provider import AuthProvider, AuthUser
+from backend.auth.providers.partient_provider import PatientProvider, AuthUser
 from backend.patients.models import PatientUpdateRequestModel
-
+from backend.auth.providers.auth_providers import AuthProvider
+from backend.auth.providers.partient_provider import PatientProvider
 from backend.patients.controllers import (
     update_patient,
     get_all_patients,
@@ -19,12 +20,13 @@ from backend.patients.models import (
 
 router = APIRouter()
 OAuth2 = HTTPBearer()
-auth_handler = AuthProvider()
+auth_admin_handler = AuthProvider()
+auth_patient_handler = PatientProvider()
 
 router = APIRouter(prefix="/patients", tags=["Patients"])
 
 @router.get("/me", response_model=PatientResponseModel)
-def get_me(current_user: AuthUser = Depends(auth_handler.get_current_patient_user)):
+def get_me(current_user: AuthUser = Depends(auth_patient_handler.get_current_patient_user)):
     return get_patient_profile(current_user)
 
 @router.get("/", response_model=list[PatientResponseModel])
@@ -41,7 +43,7 @@ def get_all_patients_api(
 @router.get("/{patient_id}", response_model=PatientResponseModel)
 def get_patient_api(
     patient_id: int,
-    current_user: AuthUser = Depends(auth_handler.get_current_admin_user),
+    current_user: AuthUser = Depends(auth_admin_handler.get_current_admin_user),
 ):
     """
     Lấy thông tin chi tiết của một bệnh nhân theo ID.
@@ -54,7 +56,7 @@ def get_patient_api(
 def update_patient_api(
     patient_id: int,
     patient_details: PatientUpdateRequestModel,
-    current_user: AuthUser = Depends(auth_handler.get_current_patient_user),
+    current_user: AuthUser = Depends(auth_patient_handler.get_current_patient_user),
 ):
     """
     Cập nhật thông tin bệnh nhân theo ID.

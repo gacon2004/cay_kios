@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from backend.users.models import UserCreateModel, UserUpdateModel, UserResponseModel
-from backend.auth.provider import AuthProvider
+from backend.auth.providers.auth_providers import AuthProvider
 from backend.users.controllers import (
     get_all_users,
     get_user_by_id,

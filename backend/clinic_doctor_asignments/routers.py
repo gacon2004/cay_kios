@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import HTTPBearer
-from backend.auth.provider import AuthProvider, AuthUser
+from backend.auth.providers.auth_providers import AuthProvider, AdminUser
 from backend.clinic_doctor_asignments.models import (
     ClinicDoctorAssignmentResponse,
     ClinicDoctorAssignmentCreateRequest,
@@ -31,7 +31,7 @@ def get_all_assignments_api():
 @router.get("/{assignment_id}", response_model=ClinicDoctorAssignmentResponse)
 def get_assignment_api(
     assignment_id: int,
-    current_user: AuthUser = Depends(auth_handler.get_current_admin_user),
+    current_user: AdminUser = Depends(auth_handler.get_current_admin_user),
 ):
     row = get_assignment_by_id(assignment_id)
     return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(row))
@@ -40,7 +40,7 @@ def get_assignment_api(
 @router.post("/", response_model=ClinicDoctorAssignmentResponse, status_code=status.HTTP_201_CREATED)
 def create_assignment_api(
     data: ClinicDoctorAssignmentCreateRequest,
-    current_user: AuthUser = Depends(auth_handler.get_current_admin_user),
+    current_user: AdminUser = Depends(auth_handler.get_current_admin_user),
 ):
     new_id = create_assignment(data)
     created = get_assignment_by_id(new_id)
@@ -51,7 +51,7 @@ def create_assignment_api(
 def update_assignment_api(
     assignment_id: int,
     data: ClinicDoctorAssignmentUpdateRequest,
-    current_user: AuthUser = Depends(auth_handler.get_current_admin_user),
+    current_user: AdminUser = Depends(auth_handler.get_current_admin_user),
 ):
     if assignment_id != data.id:
         return JSONResponse(
@@ -66,7 +66,7 @@ def update_assignment_api(
 @router.delete("/{assignment_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_assignment_api(
     assignment_id: int,
-    current_user: AuthUser = Depends(auth_handler.get_current_admin_user),
+    current_user: AdminUser = Depends(auth_handler.get_current_admin_user),
 ):
     delete_assignment(assignment_id)
     return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=None)

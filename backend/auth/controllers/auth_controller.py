@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 from backend.database.connector import DatabaseConnector
-from backend.auth.provider import AuthProvider
+from backend.auth.providers.auth_providers import AuthProvider
 from backend.auth.models.auth_models import SignUpRequestModel
 
 auth_handler = AuthProvider()

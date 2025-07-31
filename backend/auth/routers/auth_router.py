@@ -1,10 +1,14 @@
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
-from backend.auth.provider import AuthProvider
+from backend.auth.providers.auth_providers import AuthProvider
 from backend.auth.controllers.auth_controller import signup_user, signin_user
-from backend.auth.models.auth_models import SignUpRequestModel, SignInRequestModel
-from backend.auth.token_models import UserAuthResponseModel, AccessTokenResponseModel
+from backend.auth.models.auth_models import (
+    SignUpRequestModel,
+    SignInRequestModel,
+    UserAuthResponseModel,
+    AccessTokenResponseModel,
+)
 
 router = APIRouter(prefix="/auth", tags=["Unified Auth"])
 auth_handler = AuthProvider()

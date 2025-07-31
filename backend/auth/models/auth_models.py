@@ -13,3 +13,26 @@ class SignUpRequestModel(BaseModel):
 class SignInRequestModel(BaseModel):
     username: str
     password: str
+
+# --- TOKEN MODEL ---
+class TokenModel(BaseModel):
+    access_token: str
+    refresh_token: Optional[str] = None
+
+# --- USER RESPONSE ---
+class AdminDoctorResponseModel(BaseModel):
+    id: int
+    username: str
+    full_name: str
+    role: str
+    email: EmailStr
+    phone: str
+
+# --- AUTH RESPONSE (FULL) ---
+class UserAuthResponseModel(BaseModel):
+    token: TokenModel
+    user: AdminDoctorResponseModel
+
+# --- ACCESS ONLY RESPONSE ---
+class AccessTokenResponseModel(BaseModel):
+    access_token: str
