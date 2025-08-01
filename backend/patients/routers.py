@@ -23,15 +23,10 @@ OAuth2 = HTTPBearer()
 auth_admin_handler = AuthProvider()
 auth_patient_handler = PatientProvider()
 
-<<<<<<< HEAD
-@router.get("/patients/me", response_model=PatientResponseModel)
-def get_me(current_user: AuthUser = Depends(auth_handler.get_current_patient_user)):
-=======
 router = APIRouter(prefix="/patients", tags=["Patients"])
 
 @router.get("/me", response_model=PatientResponseModel)
 def get_me(current_user: AuthUser = Depends(auth_patient_handler.get_current_patient_user)):
->>>>>>> 86e17ff2518c06ad2e91c23614cd316727d519ac
     return get_patient_profile(current_user)
 
 @router.put("/me", response_model=PatientResponseModel)
@@ -68,11 +63,7 @@ def get_all_patients_api(
 @router.get("/{patient_id}", response_model=PatientResponseModel)
 def get_patient_api(
     patient_id: int,
-<<<<<<< HEAD
-    current_user: AuthUser = Depends(auth_handler.get_current_patient_user),
-=======
     current_user: AdminUser = Depends(auth_admin_handler.get_current_admin_user),
->>>>>>> 86e17ff2518c06ad2e91c23614cd316727d519ac
 ):
     """
     Lấy thông tin chi tiết của một bệnh nhân theo ID.
@@ -85,11 +76,7 @@ def get_patient_api(
 def update_patient_api(
     patient_id: int,
     patient_details: PatientUpdateRequestModel,
-<<<<<<< HEAD
-    current_user: AuthUser = Depends(auth_handler.get_current_patient_user),
-=======
     current_user: AdminUser = Depends(auth_patient_handler.get_current_patient_user),
->>>>>>> 86e17ff2518c06ad2e91c23614cd316727d519ac
 ):
     """
     Cập nhật thông tin bệnh nhân theo ID.
