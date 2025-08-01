@@ -36,18 +36,10 @@ def patient_register(user_details: PatientSignUpRequestModel):
     Bệnh nhân đăng ký bằng form đầy đủ → lưu DB → trả access token.
     """
     user = register_patient(user_details)
-    access_token = auth_handler.create_access_token(user_id=user["id"], role="patient")
-    refresh_token = auth_handler.encode_refresh_token(user["id"])
 
     return JSONResponse(
         status_code=status.HTTP_201_CREATED,
-        content=jsonable_encoder({
-            "token": {
-                "access_token": access_token,
-                "refresh_token": refresh_token
-            },
-            "user": user
-        })
+        content=jsonable_encoder(user)
     )
 
 

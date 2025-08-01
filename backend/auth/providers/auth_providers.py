@@ -22,7 +22,7 @@ OAUTH2_SCHEME_DOCTOR = OAuth2PasswordBearer(
 )
 
 OAUTH2_SCHEME_ANY = OAuth2PasswordBearer(
-    tokenUrl="/auth/signin", 
+    tokenUrl="/auth/signin",
     scheme_name="AdminOrDoctorAuth"
 )
 
