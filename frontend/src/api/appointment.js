@@ -1,20 +1,4 @@
-import axios from "axios";
+import API from './axiosInstance';
 
-const API_BASE_URL = "http://localhost:8000";
-
-export const createAppointment = async (data, token) => {
-  try {
-    const response = await axios.post(
-      `${API_BASE_URL}/appointments/`,
-      data,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || { detail: "Unknown error" };
-  }
-};
+export const createAppointment = (data) => API.post('/appointments', data);
+export const getMyAppointments = () => API.get('/appointments/me');

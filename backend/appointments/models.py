@@ -7,6 +7,12 @@ class AppointmentCreateModel(BaseModel):
     service_id: int
     doctor_id: int
 
+class AppointmentUpdateModel(BaseModel):
+    clinic_id: Optional[int]
+    doctor_id: Optional[int]
+    appointment_time: Optional[datetime]
+    status: Optional[str]
+    
 class AppointmentResponseModel(BaseModel):
     id: int
     patient_id: int
@@ -22,6 +28,3 @@ class AppointmentResponseModel(BaseModel):
     doctor_name: str
     clinic_name: str
     service_price: int
-
-    class Config:
-        from_attributes = True

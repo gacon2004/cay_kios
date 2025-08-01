@@ -22,6 +22,3 @@ class DoctorResponseModel(BaseModel):
     phone: Optional[str]
     email: Optional[str]
     created_at: Optional[datetime]
-
-    class Config:
-        from_attributes = True

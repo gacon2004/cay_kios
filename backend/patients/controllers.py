@@ -1,9 +1,9 @@
 from fastapi import HTTPException, status
 from backend.database.connector import DatabaseConnector
-from backend.auth.provider import AuthProvider, AuthUser
+from backend.auth.providers.partient_provider import PatientProvider, AuthUser
 from backend.patients.models import PatientUpdateRequestModel
 
-auth_handler = AuthProvider()
+auth_handler = PatientProvider()
 database = DatabaseConnector()
 
 def get_patient_profile(current_user: AuthUser) -> dict:
@@ -15,7 +15,7 @@ def get_patient_profile(current_user: AuthUser) -> dict:
         FROM patients
         WHERE id = %s
         """,
-        (current_user.id,)
+        (current_user["id"])
     )
     if not patient:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy bệnh nhân")
@@ -98,3 +98,7 @@ def get_patient_by_id(id: int) -> dict:
             detail="Không tìm thấy bệnh nhân"
         )
     return result[0]
+
+def delete_patient_by_id(patient_id: int):
+    db = DatabaseConnector()
+    db.query_put("DELETE FROM patients WHERE id = %s", (patient_id,))

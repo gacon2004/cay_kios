@@ -1,6 +1,6 @@
 from fastapi import HTTPException, status
 from backend.database.connector import DatabaseConnector
-from backend.appointments.models import AppointmentCreateModel
+from backend.appointments.models import AppointmentCreateModel, AppointmentUpdateModel
 from datetime import datetime
 import qrcode
 import base64
@@ -103,3 +103,28 @@ def get_my_appointments(patient_id: int) -> list[dict]:
         ORDER BY a.appointment_time DESC
     """
     return db.query_get(sql, (patient_id,))
+
+def update_appointment(appointment_id: int, data: AppointmentUpdateModel) -> dict:
+    fields = []
+    values = []
+
+    for field, value in data.dict(exclude_unset=True).items():
+        fields.append(f"{field} = %s")
+        values.append(value)
+
+    if not fields:
+        raise HTTPException(status_code=400, detail="Không có dữ liệu để cập nhật")
+
+    values.append(appointment_id)
+
+    sql = f"""
+        UPDATE appointments SET {', '.join(fields)}
+        WHERE id = %s
+    """
+    db.query(sql, tuple(values))
+    return {"message": "Cập nhật thành công"}
+
+def delete_appointment(appointment_id: int) -> dict:
+    sql = "DELETE FROM appointments WHERE id = %s"
+    db.query(sql, (appointment_id,))
+    return {"message": "Xóa thành công"}

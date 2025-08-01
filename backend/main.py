@@ -1,13 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.patients.routers import router as user_router
-from backend.auth.routers import router as auth_router
+from backend.auth.routers.patient_router import router as auth_patient_router
+from backend.auth.routers.auth_router import router as auth_unified_router
 from backend.doctors.routers import router as doctor_router
 from backend.patients.routers import router as patient_router
 from backend.insurances.routers import router as insurance_router
 from backend.services.routers import router as services_router
 from backend.clinics.routers import router as clinics_router
 from backend.appointments.routers import router as appointments_router
+from backend.clinic_doctor_asignments.routers import router as clinic_doctor_asignments_router
+from backend.users.routers import router as users_router
 from dotenv import load_dotenv
 import os
 
@@ -53,12 +55,14 @@ app.add_middleware(
 )
 
 # Auth APIs
-app.include_router(auth_router)
+app.include_router(auth_patient_router)
+app.include_router(auth_unified_router)
+# Modul Api
 app.include_router(doctor_router)
 app.include_router(patient_router)
 app.include_router(insurance_router)
 app.include_router(services_router)
 app.include_router(clinics_router)
 app.include_router(appointments_router)
-# User APIs
-app.include_router(user_router)
+app.include_router(clinic_doctor_asignments_router)
+app.include_router(users_router)

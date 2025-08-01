@@ -1,53 +1,35 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
-from backend.auth.provider import AuthProvider
-from backend.users.controllers import register_user, signin_user
-from backend.users.models import (
-    UserAuthResponseModel,
-    SignInRequestModel,
-    UserSignUpRequestModel,
-    AccessTokenResponseModel,
+from backend.users.models import UserCreateModel, UserUpdateModel, UserResponseModel
+from backend.auth.providers.auth_providers import AuthProvider
+from backend.users.controllers import (
+    get_all_users,
+    get_user_by_id,
+    create_user,
+    update_user,
+    delete_user
 )
 
-router = APIRouter()
+router = APIRouter(prefix="/users", tags=["Users (Admin)"])
 auth_handler = AuthProvider()
 
+@router.get("/", response_model=list[UserResponseModel])
+def list_users(current_user: dict = Depends(auth_handler.get_current_admin_user)):
+    return get_all_users()
 
-@router.post("/auth/user-signup", response_model=UserAuthResponseModel)
-def signup_user(user_details: UserSignUpRequestModel):
-    user = register_user(user_details)
-    access_token = auth_handler.create_access_token(user_id=user["id"])
-    refresh_token = auth_handler.encode_refresh_token(user["id"])
+@router.get("/{user_id}", response_model=UserResponseModel)
+def get_user(user_id: int, current_user: dict = Depends(auth_handler.get_current_admin_user)):
+    return get_user_by_id(user_id)
 
-    return JSONResponse(
-        status_code=status.HTTP_201_CREATED,
-        content=jsonable_encoder({
-            "token": {"access_token": access_token, "refresh_token": refresh_token},
-            "user": user
-        })
-    )
+@router.post("/", response_model=UserResponseModel, status_code=status.HTTP_201_CREATED)
+def create_new_user(user_data: UserCreateModel, current_user: dict = Depends(auth_handler.get_current_admin_user)):
+    return create_user(user_data)
 
+@router.put("/{user_id}", response_model=UserResponseModel)
+def update_existing_user(user_id: int, data: UserUpdateModel, current_user: dict = Depends(auth_handler.get_current_admin_user)):
+    return update_user(user_id, data)
 
-@router.post("/auth/user-signin", response_model=UserAuthResponseModel)
-def signin_user_api(user_details: SignInRequestModel):
-    user = signin_user(user_details.username, user_details.password)
-    access_token = auth_handler.create_access_token(user_id=user["id"])
-    refresh_token = auth_handler.encode_refresh_token(user["id"])
-
-    return JSONResponse(
-        status_code=status.HTTP_200_OK,
-        content=jsonable_encoder({
-            "token": {"access_token": access_token, "refresh_token": refresh_token},
-            "user": user
-        })
-    )
-
-
-@router.post("/auth/user-refresh-token", response_model=AccessTokenResponseModel)
-def refresh_token_api(refresh_token: str):
-    new_token = auth_handler.refresh_token(refresh_token)
-    return JSONResponse(
-        status_code=status.HTTP_200_OK,
-        content=jsonable_encoder({"access_token": new_token})
-    )
+@router.delete("/{user_id}")
+def delete_existing_user(user_id: int, current_user: dict = Depends(auth_handler.get_current_admin_user)):
+    return delete_user(user_id)
