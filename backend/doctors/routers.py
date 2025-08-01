@@ -10,7 +10,6 @@ from backend.doctors.controllers import (
     get_doctor_by_id,
     update_doctor,
     delete_doctor,
-    create_doctor,
 )
 from backend.doctors.models import (
     DoctorResponseModel,
