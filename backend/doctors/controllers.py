@@ -1,6 +1,6 @@
 from fastapi import HTTPException, status
 from backend.database.connector import DatabaseConnector
-from backend.doctors.models import DoctorUpdateRequestModel, DoctorCreateRequestModel
+from backend.doctors.models import DoctorUpdateRequestModel
 
 database = DatabaseConnector()
 
@@ -22,19 +22,6 @@ def get_doctor_by_id(id: int) -> dict:
     if not result:
         raise HTTPException(status_code=404, detail="Không tìm thấy bác sĩ")
     return result[0]
-
-def create_doctor(doctor_model: DoctorCreateRequestModel) -> int:
-    sql = """
-        INSERT INTO doctors (full_name, specialty, phone, email)
-        VALUES (%s, %s, %s, %s)
-    """
-    params = (
-        doctor_model.full_name,
-        doctor_model.specialty,
-        doctor_model.phone,
-        doctor_model.email,
-    )
-    return database.query_post(sql, params)
 
 def update_doctor(doctor_model: DoctorUpdateRequestModel) -> int:
     update_fields = []
