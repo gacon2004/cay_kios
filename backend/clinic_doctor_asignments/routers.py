@@ -20,7 +20,7 @@ router = APIRouter()
 auth_handler = AuthProvider()
 OAuth2 = HTTPBearer()
 
-router = APIRouter(prefix="/clinic-doctor-assignments", tags=["Clinic Doctor"])
+router = APIRouter(prefix="/clinic-doctor-assignments", tags=["Clinic Doctor Assignments"])
 
 @router.get("/", response_model=list[ClinicDoctorAssignmentResponse])
 def get_all_assignments_api():

@@ -28,6 +28,3 @@ class AppointmentResponseModel(BaseModel):
     doctor_name: str
     clinic_name: str
     service_price: int
-
-    class Config:
-        from_attributes = True

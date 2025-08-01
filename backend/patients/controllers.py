@@ -98,3 +98,7 @@ def get_patient_by_id(id: int) -> dict:
             detail="Không tìm thấy bệnh nhân"
         )
     return result[0]
+
+def delete_patient_by_id(patient_id: int):
+    db = DatabaseConnector()
+    db.query_put("DELETE FROM patients WHERE id = %s", (patient_id,))

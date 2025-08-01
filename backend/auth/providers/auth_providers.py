@@ -21,11 +21,6 @@ OAUTH2_SCHEME_DOCTOR = OAuth2PasswordBearer(
     scheme_name="DoctorAuth"
 )
 
-OAUTH2_SCHEME_ANY = OAuth2PasswordBearer(
-    tokenUrl="/auth/signin",
-    scheme_name="AdminOrDoctorAuth"
-)
-
 CREDENTIALS_EXCEPTION = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
     detail="Không thể xác thực thông tin đăng nhập, mật khẩu sai",
@@ -126,34 +121,6 @@ class AuthProvider:
                 "full_name": user["full_name"],
                 "role": user["role"],
             }
-        except JWTError:
-            raise CREDENTIALS_EXCEPTION
-
-    async def get_current_admin_or_doctor_user(
-    self,
-    token: Annotated[str, Depends(OAUTH2_SCHEME_ANY)]
-    ) -> dict:
-        db = DatabaseConnector()
-        try:
-            payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
-            user_id = int(payload.get("sub"))
-            role = payload.get("role")
-
-            if not user_id or role not in ("admin", "doctor"):
-                raise CREDENTIALS_EXCEPTION
-
-            if role == "doctor":
-                user = self.get_doctor_user_by_id(user_id, db)
-            else:
-                user = self.get_admin_user_by_id(user_id, db)
-
-            return {
-                "id": user["id"],
-                "username": user["username"],
-                "full_name": user["full_name"],
-                "role": user["role"],
-            }
-
         except JWTError:
             raise CREDENTIALS_EXCEPTION
 

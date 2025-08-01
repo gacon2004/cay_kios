@@ -69,7 +69,7 @@ def issue_token_by_cccd(national_id: str) -> PatientResponseModel:
         )
 
     user = user[0]
-    access_token = auth_handler.create_access_token(user_id=user["id"], role="patient")
+    access_token = auth_handler.create_access_token(user_id=user["id"])
     refresh_token = auth_handler.encode_refresh_token(user["id"])
 
     return {
