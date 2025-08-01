@@ -41,15 +41,15 @@ def signup_user(user_model: SignUpRequestModel) -> dict:
     if user_model.role == "doctor":
         db.query_put(
             """
-            INSERT INTO doctors (id, full_name, email, phone, specialty)
+            INSERT INTO doctors (full_name, email, phone, specialty, user_id)
             VALUES (%s, %s, %s, %s, %s)
             """,
             (
-                user["id"],
                 user_model.full_name,
                 user_model.email,
                 user_model.phone,
                 user_model.specialty,
+                user["id"], 
             ),
         )
 
