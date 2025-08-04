@@ -2,9 +2,14 @@ from fastapi import HTTPException, status
 from backend.database.connector import DatabaseConnector
 from backend.appointments.models import AppointmentCreateModel, AppointmentUpdateModel
 from datetime import datetime
+from fastapi.responses import StreamingResponse
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.utils import ImageReader
+from io import BytesIO
 import qrcode
 import base64
-from io import BytesIO
+import io
 
 db = DatabaseConnector()
 
@@ -121,10 +126,90 @@ def update_appointment(appointment_id: int, data: AppointmentUpdateModel) -> dic
         UPDATE appointments SET {', '.join(fields)}
         WHERE id = %s
     """
-    db.query(sql, tuple(values))
+    db.query_put(sql, tuple(values))
     return {"message": "Cập nhật thành công"}
 
 def delete_appointment(appointment_id: int) -> dict:
     sql = "DELETE FROM appointments WHERE id = %s"
-    db.query(sql, (appointment_id,))
+    db.query_put(sql, (appointment_id,))
     return {"message": "Xóa thành công"}
+
+def print_appointment_pdf(appointment_id: int, user_id: int) -> StreamingResponse:
+    # 1. Lấy thông tin phiếu
+    result = db.query_get("""
+        SELECT a.*, p.full_name, p.national_id, p.date_of_birth, p.gender, p.phone,
+               s.name AS service_name, s.price AS service_price,
+               d.full_name AS doctor_name, c.name AS clinic_name
+        FROM appointments a
+        JOIN patients p ON a.patient_id = p.id
+        JOIN services s ON a.service_id = s.id
+        JOIN doctors d ON a.doctor_id = d.id
+        JOIN clinics c ON a.clinic_id = c.id
+        WHERE a.id = %s
+    """, (appointment_id,))
+
+    if not result:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phiếu khám")
+
+    a = result[0]
+
+    # 2. Kiểm tra quyền bệnh nhân
+    if a["patient_id"] != user_id:
+        raise HTTPException(status_code=403, detail="Bạn không có quyền in phiếu khám này")
+
+    # 3. Tạo PDF bằng reportlab
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+
+    # ==== HEADER ====
+    c.setFont("Helvetica-Bold", 16)
+    c.drawCentredString(width / 2, height - 40, "PHIẾU KHÁM BỆNH")
+    c.setFont("Helvetica", 12)
+    c.drawCentredString(width / 2, height - 60, "Thông tin xác nhận đăng ký khám bệnh")
+
+    # ==== Thông tin bệnh nhân ====
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(40, height - 100, "🔹 Thông tin bệnh nhân")
+    c.setFont("Helvetica", 11)
+    c.drawString(50, height - 120, f"Họ tên: {a['full_name']}")
+    c.drawString(50, height - 140, f"CCCD: {a['national_id']}")
+    c.drawString(50, height - 160, f"Ngày sinh: {a['date_of_birth']}")
+    c.drawString(50, height - 180, f"Giới tính: {'Nam' if a['gender'] == 'male' else 'Nữ'}")
+    c.drawString(50, height - 200, f"Số điện thoại: {a['phone']}")
+
+    # ==== Thông tin khám ====
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(300, height - 100, "🩺 Thông tin khám bệnh")
+    c.setFont("Helvetica", 11)
+    c.drawString(310, height - 120, f"Bệnh viện: {a['clinic_name']}")
+    c.drawString(310, height - 140, f"Dịch vụ: {a['service_name']} ({a['service_price']}đ)")
+    c.drawString(310, height - 160, f"Bác sĩ: {a['doctor_name']}")
+    c.drawString(310, height - 180, f"Số thứ tự: {a['queue_number']}")
+    c.drawString(310, height - 200, f"Thời gian: {a['appointment_time'].strftime('%H:%M:%S %d/%m/%Y')}")
+
+    # ==== QR Code ====
+    if a.get("qr_code"):
+        try:
+            img_data = base64.b64decode(a["qr_code"])
+            img = ImageReader(io.BytesIO(img_data))
+            c.drawImage(img, width / 2 - 50, height - 320, width=100, height=100)
+        except Exception as e:
+            print("Lỗi QR code:", e)
+
+    # ==== Hướng dẫn ====
+    c.setFont("Helvetica", 10)
+    c.drawString(40, height - 360, "📌 Hướng dẫn:")
+    c.drawString(50, height - 380, "• Vui lòng đến đúng giờ hẹn để khám.")
+    c.drawString(50, height - 400, "• Mang theo phiếu khám và giấy tờ tùy thân.")
+    c.drawString(50, height - 420, "• Gọi tổng đài nếu cần hỗ trợ thêm.")
+
+    c.showPage()
+    c.save()
+    buffer.seek(0)
+
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"inline; filename=phieu_kham_{appointment_id}.pdf"}
+    )

@@ -12,6 +12,7 @@ from backend.appointments.controllers import (
     get_my_appointments,
     update_appointment,
     delete_appointment,
+    print_appointment_pdf,
 )
 
 auth_admin_handler = AuthProvider()
@@ -56,3 +57,11 @@ def admin_delete_appointment(
     current_user: dict = Depends(AuthProvider.get_current_admin_user),
 ):
     return delete_appointment(appointment_id)
+
+@router.get("/{appointment_id}/print")
+def print_pdf(
+    appointment_id: int,
+    current_user: Annotated[dict, Depends(auth_patient_handler.get_current_patient_user)]
+):
+    return print_appointment_pdf(appointment_id, current_user["id"])
+
