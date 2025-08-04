@@ -38,10 +38,10 @@ def update_me_api(
     Cập nhật thông tin của chính bệnh nhân đang đăng nhập.
     """
     patient_id = current_user["id"]
-    
+
     update_patient(patient_id, data)
     updated = get_patient_by_id(patient_id)
-    
+
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content=jsonable_encoder(updated)

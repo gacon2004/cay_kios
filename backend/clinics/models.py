@@ -14,7 +14,7 @@ class ClinicUpdateModel(BaseModel):
 class ClinicResponseModel(BaseModel):
     id: int
     name: str
-    location: str
+    location: Optional[str] = None
     status: str
 
     class Config:
