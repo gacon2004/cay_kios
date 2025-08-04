@@ -43,7 +43,7 @@ def list_my_appointments(
     """
     return get_my_appointments(current_user["id"])
 
-@router.put("/appointments/{appointment_id}", tags=["Appointments"])
+@router.put("/{appointment_id}", tags=["Appointments"])
 def admin_update_appointment(
     appointment_id: int = Path(...),
     data: AppointmentUpdateModel = Depends(),
@@ -51,7 +51,7 @@ def admin_update_appointment(
 ):
     return update_appointment(appointment_id, data)
 
-@router.delete("/appointments/{appointment_id}", tags=["Appointments"])
+@router.delete("/{appointment_id}", tags=["Appointments"])
 def admin_delete_appointment(
     appointment_id: int = Path(...),
     current_user: dict = Depends(AuthProvider.get_current_admin_user),
