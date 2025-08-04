@@ -6,23 +6,24 @@ from backend.patients.models import PatientUpdateRequestModel
 auth_handler = PatientProvider()
 database = DatabaseConnector()
 
+# Lấy hồ sơ bệnh nhân hiện tại
 def get_patient_profile(current_user: AuthUser) -> dict:
     db = DatabaseConnector()
     patient = db.query_get(
         """
         SELECT id, national_id, full_name, date_of_birth, gender, phone,
-               occupation, ethnicity, created_at
+               ward, province, occupation, ethnicity, created_at
         FROM patients
         WHERE id = %s
         """,
-        (current_user["id"])
+        (current_user["id"],)
     )
     if not patient:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy bệnh nhân")
     return patient[0]
 
+# Cập nhật thông tin bệnh nhân
 def update_patient(patient_model: PatientUpdateRequestModel) -> int:
-    # Kiểm tra national_id đã tồn tại chưa
     existing = get_patients_by_national_id(patient_model.national_id)
     if len(existing) > 0 and existing[0]["id"] != patient_model.id:
         raise HTTPException(
@@ -49,6 +50,8 @@ def update_patient(patient_model: PatientUpdateRequestModel) -> int:
         WHERE id = %s
     """
     return database.query_put(sql, tuple(params))
+
+# Lấy danh sách bệnh nhân với phân trang
 def get_all_patients(limit: int = 10, offset: int = 0) -> list[dict]:
     patients = database.query_get(
         """
@@ -59,6 +62,8 @@ def get_all_patients(limit: int = 10, offset: int = 0) -> list[dict]:
             date_of_birth,
             gender,
             phone,
+            ward,
+            province,
             occupation,
             ethnicity,
             created_at
@@ -68,12 +73,16 @@ def get_all_patients(limit: int = 10, offset: int = 0) -> list[dict]:
         (limit, offset),
     )
     return patients
+
+# Tìm bệnh nhân theo CCCD/CMND
 def get_patients_by_national_id(national_id: str) -> list[dict]:
     db = DatabaseConnector()
     return db.query_get(
         "SELECT * FROM patients WHERE national_id = %s",
         (national_id,),
     )
+
+# Lấy bệnh nhân theo ID
 def get_patient_by_id(id: int) -> dict:
     result = database.query_get(
         """
@@ -84,6 +93,8 @@ def get_patient_by_id(id: int) -> dict:
             date_of_birth,
             gender,
             phone,
+            ward,
+            province,
             occupation,
             ethnicity,
             created_at
@@ -99,6 +110,7 @@ def get_patient_by_id(id: int) -> dict:
         )
     return result[0]
 
+# Xóa bệnh nhân theo ID
 def delete_patient_by_id(patient_id: int):
     db = DatabaseConnector()
     db.query_put("DELETE FROM patients WHERE id = %s", (patient_id,))

@@ -23,8 +23,8 @@ def register_patient(data: PatientSignUpRequestModel) -> PatientResponseModel:
         """
         INSERT INTO patients (
             national_id, full_name, date_of_birth,
-            gender, phone, occupation, ethnicity
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+            gender, phone, ward, province, occupation, ethnicity
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """,
         (
             data.national_id,
@@ -32,13 +32,19 @@ def register_patient(data: PatientSignUpRequestModel) -> PatientResponseModel:
             data.date_of_birth,
             data.gender,
             data.phone,
+            data.ward,
+            data.province,
             data.occupation,
             data.ethnicity,
         )
     )
 
     user = db.query_get(
-        "SELECT id, national_id, full_name, date_of_birth, gender, phone, occupation, ethnicity FROM patients WHERE national_id = %s",
+        """
+        SELECT id, national_id, full_name, date_of_birth, gender,
+               phone, ward, province, occupation, ethnicity
+        FROM patients WHERE national_id = %s
+        """,
         (data.national_id,)
     )[0]
 
@@ -52,6 +58,7 @@ def register_patient(data: PatientSignUpRequestModel) -> PatientResponseModel:
         ),
         user=PatientResponseModel(**user)
     )
+
 
 def issue_token_by_cccd(national_id: str) -> PatientResponseModel:
     db = DatabaseConnector()
