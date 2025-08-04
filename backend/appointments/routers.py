@@ -48,7 +48,6 @@ def admin_update_appointment(
     data: AppointmentUpdateModel = Depends(),
     current_user: dict = Depends(AuthProvider.get_current_admin_user),
 ):
-    AuthProvider.require_admin(current_user)
     return update_appointment(appointment_id, data)
 
 @router.delete("/appointments/{appointment_id}", tags=["Appointments"])
@@ -56,5 +55,4 @@ def admin_delete_appointment(
     appointment_id: int = Path(...),
     current_user: dict = Depends(AuthProvider.get_current_admin_user),
 ):
-    AuthProvider.require_admin(current_user)
     return delete_appointment(appointment_id)
