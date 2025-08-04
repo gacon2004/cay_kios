@@ -2,12 +2,6 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime
 
-class DoctorCreateRequestModel(BaseModel):
-    full_name: str
-    specialty: Optional[str] = None
-    phone: Optional[str] = None
-    email: Optional[EmailStr] = None
-
 class DoctorUpdateRequestModel(BaseModel):
     id: int
     full_name: Optional[str] = None

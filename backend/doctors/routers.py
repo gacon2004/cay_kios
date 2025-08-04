@@ -10,12 +10,10 @@ from backend.doctors.controllers import (
     get_doctor_by_id,
     update_doctor,
     delete_doctor,
-    create_doctor,
 )
 from backend.doctors.models import (
     DoctorResponseModel,
     DoctorUpdateRequestModel,
-    DoctorCreateRequestModel,
 )
 
 router = APIRouter()
@@ -71,17 +69,6 @@ async def get_doctor_api(
 ):
     doctor = get_doctor_by_id(doctor_id)
     return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(doctor))
-
-
-@router.post("/", response_model=DoctorResponseModel, status_code=status.HTTP_201_CREATED)
-def create_doctor_api(
-    doctor_data: DoctorCreateRequestModel,
-    current_user: DoctorUser = Depends(auth_handler.get_current_admin_user),
-):
-    new_id = create_doctor(doctor_data)
-    created = get_doctor_by_id(new_id)
-    return JSONResponse(status_code=status.HTTP_201_CREATED, content=jsonable_encoder(created))
-
 
 @router.put("/{doctor_id}", response_model=DoctorResponseModel)
 def update_doctor_api(

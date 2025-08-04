@@ -11,6 +11,8 @@ class PatientSignUpRequestModel(BaseModel):
     date_of_birth: Optional[date] = None
     gender: Optional[str] = None
     phone: Optional[str] = None
+    ward: Optional[str] = None   
+    province: Optional[str] = None 
     occupation: Optional[str] = None
     ethnicity: Optional[str] = None
 
