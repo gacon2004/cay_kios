@@ -25,8 +25,8 @@ def get_doctor_by_id(id: int) -> dict:
 
 def create_doctor(doctor_model: DoctorCreateRequestModel) -> int:
     sql = """
-        INSERT INTO doctors (full_name, specialty, phone, email)
-        VALUES (%s, %s, %s, %s)
+        INSERT INTO doctors (full_name, specialty, phone, email, specialty)
+        VALUES (%s, %s, %s, %s, %s)
     """
     params = (
         doctor_model.full_name,

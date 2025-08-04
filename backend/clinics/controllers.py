@@ -5,7 +5,7 @@ from backend.clinics.models import ClinicCreateModel, ClinicUpdateModel
 db = DatabaseConnector()
 
 def get_all_clinics() -> list[dict]:
-    return db.query_get("SELECT * FROM clinics")
+    return db.query_get("SELECT * FROM clinics",())
 
 def get_clinic_by_id(clinic_id: int) -> dict:
     result = db.query_get("SELECT * FROM clinics WHERE id = %s", (clinic_id,))

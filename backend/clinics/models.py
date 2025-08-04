@@ -3,7 +3,7 @@ from typing import Optional
 
 class ClinicCreateModel(BaseModel):
     name: str
-    location: str
+    location: Optional[str] = None
     status: str  # "active", "inactive", "closed"
 
 class ClinicUpdateModel(BaseModel):
@@ -14,8 +14,8 @@ class ClinicUpdateModel(BaseModel):
 class ClinicResponseModel(BaseModel):
     id: int
     name: str
-    location: str
-    status: str
+    location: Optional[str] = None
+    status: Optional[str] = None
 
     class Config:
         from_attributes = True

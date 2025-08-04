@@ -7,6 +7,7 @@ from backend.auth.models.patient_models import (
     PatientResponseModel,
     CCCDRequestModel,
     PatientSignUpRequestModel,
+    UserAuthResponseModel
 )
 from backend.auth.providers.partient_provider import PatientProvider
 from backend.auth.controllers.patient_auth_controller import (
@@ -18,7 +19,7 @@ router = APIRouter(prefix="/auth/patient", tags=["Patient Auth"])
 auth_handler = PatientProvider()
 
 
-@router.post("/login", response_model=PatientResponseModel)
+@router.post("/login", response_model=UserAuthResponseModel)
 def token_by_cccd(user_cccd: CCCDRequestModel):
     """
     Bệnh nhân đăng nhập bằng CCCD — nếu chưa có thì trả lỗi.
@@ -30,7 +31,7 @@ def token_by_cccd(user_cccd: CCCDRequestModel):
     )
 
 
-@router.post("/register", response_model=PatientResponseModel)
+@router.post("/register", response_model=UserAuthResponseModel)
 def patient_register(user_details: PatientSignUpRequestModel):
     """
     Bệnh nhân đăng ký bằng form đầy đủ → lưu DB → trả access token.

@@ -13,6 +13,7 @@ from backend.auth.models.auth_models import (
 router = APIRouter(prefix="/auth", tags=["Admin/Doctor Auth"])
 auth_handler = AuthProvider()
 
+
 @router.post("/signup", response_model=UserAuthResponseModel)
 def signup_api(user_details: SignUpRequestModel):
     user = signup_user(user_details)
