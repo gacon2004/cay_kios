@@ -9,5 +9,5 @@ jinja2
 qrcode
 pillow==11.3.0
 qrcode[pil]
-
+reportlab
 

@@ -1,11 +1,18 @@
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 from backend.database.connector import DatabaseConnector
 from backend.appointments.models import AppointmentCreateModel, AppointmentUpdateModel
 from datetime import datetime
+from fastapi import HTTPException
+from fastapi.responses import StreamingResponse
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.utils import ImageReader
+from reportlab.lib.colors import HexColor, white
+import io, base64
 import qrcode
-import base64
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from io import BytesIO
-
 db = DatabaseConnector()
 
 def generate_qr_code(data: dict) -> str:
@@ -121,10 +128,123 @@ def update_appointment(appointment_id: int, data: AppointmentUpdateModel) -> dic
         UPDATE appointments SET {', '.join(fields)}
         WHERE id = %s
     """
-    db.query(sql, tuple(values))
+    db.query_put(sql, tuple(values))
     return {"message": "Cập nhật thành công"}
 
 def delete_appointment(appointment_id: int) -> dict:
     sql = "DELETE FROM appointments WHERE id = %s"
-    db.query(sql, (appointment_id,))
+    db.query_put(sql, (appointment_id,))
     return {"message": "Xóa thành công"}
+
+# Đăng ký font Unicode
+pdfmetrics.registerFont(TTFont("DejaVu", "backend/fonts/DejaVuSans.ttf"))
+pdfmetrics.registerFont(TTFont("DejaVu-Bold", "backend/fonts/DejaVuSans-Bold.ttf"))
+
+def print_appointment_pdf(appointment_id: int, user_id: int) -> StreamingResponse:
+    # 1. Lấy thông tin phiếu
+    result = db.query_get("""
+        SELECT a.*, p.full_name, p.national_id, p.date_of_birth, p.gender, p.phone,
+               s.name AS service_name, s.price AS service_price,
+               d.full_name AS doctor_name, c.name AS clinic_name
+        FROM appointments a
+        JOIN patients p ON a.patient_id = p.id
+        JOIN services s ON a.service_id = s.id
+        JOIN doctors d ON a.doctor_id = d.id
+        JOIN clinics c ON a.clinic_id = c.id
+        WHERE a.id = %s
+    """, (appointment_id,))
+
+    if not result:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phiếu khám")
+
+    a = result[0]
+
+    # 2. Kiểm tra quyền bệnh nhân
+    if a["patient_id"] != user_id:
+        raise HTTPException(status_code=403, detail="Bạn không có quyền in phiếu khám này")
+
+    # 3. Tạo PDF
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+
+    # ==== Header ====
+    c.setFillColor(HexColor("#111827"))
+    c.setFont("DejaVu-Bold", 20)
+    c.drawCentredString(width / 2, height - 50, "Hoàn Thành Đăng Ký")
+
+    c.setFont("DejaVu", 12)
+    c.setFillColor(HexColor("#6B7280"))
+    c.drawCentredString(width / 2, height - 70, "Kiểm tra thông tin và in phiếu khám")
+
+    # ==== Box Thông Tin Bệnh Nhân ====
+    left_x = 50
+    top_y = height - 120
+    box_w = 240
+    box_h = 160
+
+    c.setFillColor(HexColor("#E0ECFF"))
+    c.roundRect(left_x, top_y - box_h, box_w, box_h, 10, fill=1, stroke=0)
+
+    c.setFont("DejaVu-Bold", 12)
+    c.setFillColor(HexColor("#1D4ED8"))
+    c.drawString(left_x + 10, top_y - 20, "Thông Tin Bệnh Nhân")
+
+    c.setFont("DejaVu", 10)
+    c.setFillColor(HexColor("#111827"))
+    c.drawString(left_x + 10, top_y - 40, f"Họ tên: {a['full_name']}")
+    c.drawString(left_x + 10, top_y - 58, f"CCCD: {a['national_id']}")
+    c.drawString(left_x + 10, top_y - 76, f"Ngày sinh: {a['date_of_birth']}")
+    c.drawString(left_x + 10, top_y - 94, f"Giới tính: {'Nam' if a['gender'] == 'male' else 'Nữ'}")
+    c.drawString(left_x + 10, top_y - 112, f"SDT: {a['phone']}")
+
+    # ==== Box Thông Tin Khám ====
+    right_x = width - left_x - box_w
+    c.setFillColor(HexColor("#D1FAE5"))
+    c.roundRect(right_x, top_y - box_h, box_w, box_h, 10, fill=1, stroke=0)
+
+    c.setFont("DejaVu-Bold", 12)
+    c.setFillColor(HexColor("#059669"))
+    c.drawString(right_x + 10, top_y - 20, "Thông Tin Khám")
+
+    c.setFont("DejaVu", 10)
+    c.setFillColor(HexColor("#111827"))
+    c.drawString(right_x + 10, top_y - 40, f"Dịch vụ: {a['service_name']}")
+    c.drawString(right_x + 10, top_y - 58, f"Phòng: {a['clinic_name']}")
+    c.drawString(right_x + 10, top_y - 76, f"Bác sĩ: {a['doctor_name']}")
+    c.drawString(right_x + 10, top_y - 94, f"Số thứ tự: {a['queue_number']}")
+    c.drawString(right_x + 10, top_y - 112, f"Thời gian: {a['appointment_time'].strftime('%H:%M:%S %d/%m/%Y')}")
+
+    # ==== QR Code ====
+    if a.get("qr_code"):
+        try:
+            img_data = base64.b64decode(a["qr_code"])
+            img = ImageReader(io.BytesIO(img_data))
+            c.drawImage(img, width / 2 - 50, top_y - box_h - 120, width=100, height=100)
+        except Exception as e:
+            print("Lỗi QR code:", e)
+
+    # ==== Hướng dẫn ====
+    guide_top = top_y - box_h - 160
+    c.setFillColor(HexColor("#FEF3C7"))
+    c.roundRect(40, guide_top - 70, width - 80, 60, 10, fill=1, stroke=0)
+
+    c.setFillColor(HexColor("#92400E"))
+    c.setFont("DejaVu-Bold", 11)
+    c.drawString(50, guide_top - 15, "Hướng dẫn:")
+
+    c.setFont("DejaVu", 9)
+    c.drawString(60, guide_top - 30, "• Vui lòng đến phòng khám đúng giờ hẹn")
+    c.drawString(60, guide_top - 45, "• Mang theo phiếu khám và giấy tờ tùy thân")
+    c.drawString(60, guide_top - 60, "• Liên hệ tổng đài nếu cần hỗ trợ")
+
+    # ==== Kết thúc ====
+    c.showPage()
+    c.save()
+    buffer.seek(0)
+
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"inline; filename=phieu_kham_{appointment_id}.pdf"}
+    )
