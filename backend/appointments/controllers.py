@@ -1,16 +1,18 @@
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 from backend.database.connector import DatabaseConnector
 from backend.appointments.models import AppointmentCreateModel, AppointmentUpdateModel
 from datetime import datetime
+from fastapi import HTTPException
 from fastapi.responses import StreamingResponse
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.utils import ImageReader
-from io import BytesIO
+from reportlab.lib.colors import HexColor, white
+import io, base64
 import qrcode
-import base64
-import io
-
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from io import BytesIO
 db = DatabaseConnector()
 
 def generate_qr_code(data: dict) -> str:
@@ -134,6 +136,10 @@ def delete_appointment(appointment_id: int) -> dict:
     db.query_put(sql, (appointment_id,))
     return {"message": "Xóa thành công"}
 
+# Đăng ký font Unicode
+pdfmetrics.registerFont(TTFont("DejaVu", "backend/fonts/DejaVuSans.ttf"))
+pdfmetrics.registerFont(TTFont("DejaVu-Bold", "backend/fonts/DejaVuSans-Bold.ttf"))
+
 def print_appointment_pdf(appointment_id: int, user_id: int) -> StreamingResponse:
     # 1. Lấy thông tin phiếu
     result = db.query_get("""
@@ -157,53 +163,82 @@ def print_appointment_pdf(appointment_id: int, user_id: int) -> StreamingRespons
     if a["patient_id"] != user_id:
         raise HTTPException(status_code=403, detail="Bạn không có quyền in phiếu khám này")
 
-    # 3. Tạo PDF bằng reportlab
+    # 3. Tạo PDF
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
 
-    # ==== HEADER ====
-    c.setFont("Helvetica-Bold", 16)
-    c.drawCentredString(width / 2, height - 40, "PHIẾU KHÁM BỆNH")
-    c.setFont("Helvetica", 12)
-    c.drawCentredString(width / 2, height - 60, "Thông tin xác nhận đăng ký khám bệnh")
+    # ==== Header ====
+    c.setFillColor(HexColor("#111827"))
+    c.setFont("DejaVu-Bold", 20)
+    c.drawCentredString(width / 2, height - 50, "Hoàn Thành Đăng Ký")
 
-    # ==== Thông tin bệnh nhân ====
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(40, height - 100, "🔹 Thông tin bệnh nhân")
-    c.setFont("Helvetica", 11)
-    c.drawString(50, height - 120, f"Họ tên: {a['full_name']}")
-    c.drawString(50, height - 140, f"CCCD: {a['national_id']}")
-    c.drawString(50, height - 160, f"Ngày sinh: {a['date_of_birth']}")
-    c.drawString(50, height - 180, f"Giới tính: {'Nam' if a['gender'] == 'male' else 'Nữ'}")
-    c.drawString(50, height - 200, f"Số điện thoại: {a['phone']}")
+    c.setFont("DejaVu", 12)
+    c.setFillColor(HexColor("#6B7280"))
+    c.drawCentredString(width / 2, height - 70, "Kiểm tra thông tin và in phiếu khám")
 
-    # ==== Thông tin khám ====
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(300, height - 100, "🩺 Thông tin khám bệnh")
-    c.setFont("Helvetica", 11)
-    c.drawString(310, height - 120, f"Bệnh viện: {a['clinic_name']}")
-    c.drawString(310, height - 140, f"Dịch vụ: {a['service_name']} ({a['service_price']}đ)")
-    c.drawString(310, height - 160, f"Bác sĩ: {a['doctor_name']}")
-    c.drawString(310, height - 180, f"Số thứ tự: {a['queue_number']}")
-    c.drawString(310, height - 200, f"Thời gian: {a['appointment_time'].strftime('%H:%M:%S %d/%m/%Y')}")
+    # ==== Box Thông Tin Bệnh Nhân ====
+    left_x = 50
+    top_y = height - 120
+    box_w = 240
+    box_h = 160
+
+    c.setFillColor(HexColor("#E0ECFF"))
+    c.roundRect(left_x, top_y - box_h, box_w, box_h, 10, fill=1, stroke=0)
+
+    c.setFont("DejaVu-Bold", 12)
+    c.setFillColor(HexColor("#1D4ED8"))
+    c.drawString(left_x + 10, top_y - 20, "Thông Tin Bệnh Nhân")
+
+    c.setFont("DejaVu", 10)
+    c.setFillColor(HexColor("#111827"))
+    c.drawString(left_x + 10, top_y - 40, f"Họ tên: {a['full_name']}")
+    c.drawString(left_x + 10, top_y - 58, f"CCCD: {a['national_id']}")
+    c.drawString(left_x + 10, top_y - 76, f"Ngày sinh: {a['date_of_birth']}")
+    c.drawString(left_x + 10, top_y - 94, f"Giới tính: {'Nam' if a['gender'] == 'male' else 'Nữ'}")
+    c.drawString(left_x + 10, top_y - 112, f"SDT: {a['phone']}")
+
+    # ==== Box Thông Tin Khám ====
+    right_x = width - left_x - box_w
+    c.setFillColor(HexColor("#D1FAE5"))
+    c.roundRect(right_x, top_y - box_h, box_w, box_h, 10, fill=1, stroke=0)
+
+    c.setFont("DejaVu-Bold", 12)
+    c.setFillColor(HexColor("#059669"))
+    c.drawString(right_x + 10, top_y - 20, "Thông Tin Khám")
+
+    c.setFont("DejaVu", 10)
+    c.setFillColor(HexColor("#111827"))
+    c.drawString(right_x + 10, top_y - 40, f"Dịch vụ: {a['service_name']}")
+    c.drawString(right_x + 10, top_y - 58, f"Phòng: {a['clinic_name']}")
+    c.drawString(right_x + 10, top_y - 76, f"Bác sĩ: {a['doctor_name']}")
+    c.drawString(right_x + 10, top_y - 94, f"Số thứ tự: {a['queue_number']}")
+    c.drawString(right_x + 10, top_y - 112, f"Thời gian: {a['appointment_time'].strftime('%H:%M:%S %d/%m/%Y')}")
 
     # ==== QR Code ====
     if a.get("qr_code"):
         try:
             img_data = base64.b64decode(a["qr_code"])
             img = ImageReader(io.BytesIO(img_data))
-            c.drawImage(img, width / 2 - 50, height - 320, width=100, height=100)
+            c.drawImage(img, width / 2 - 50, top_y - box_h - 120, width=100, height=100)
         except Exception as e:
             print("Lỗi QR code:", e)
 
     # ==== Hướng dẫn ====
-    c.setFont("Helvetica", 10)
-    c.drawString(40, height - 360, "📌 Hướng dẫn:")
-    c.drawString(50, height - 380, "• Vui lòng đến đúng giờ hẹn để khám.")
-    c.drawString(50, height - 400, "• Mang theo phiếu khám và giấy tờ tùy thân.")
-    c.drawString(50, height - 420, "• Gọi tổng đài nếu cần hỗ trợ thêm.")
+    guide_top = top_y - box_h - 160
+    c.setFillColor(HexColor("#FEF3C7"))
+    c.roundRect(40, guide_top - 70, width - 80, 60, 10, fill=1, stroke=0)
 
+    c.setFillColor(HexColor("#92400E"))
+    c.setFont("DejaVu-Bold", 11)
+    c.drawString(50, guide_top - 15, "Hướng dẫn:")
+
+    c.setFont("DejaVu", 9)
+    c.drawString(60, guide_top - 30, "• Vui lòng đến phòng khám đúng giờ hẹn")
+    c.drawString(60, guide_top - 45, "• Mang theo phiếu khám và giấy tờ tùy thân")
+    c.drawString(60, guide_top - 60, "• Liên hệ tổng đài nếu cần hỗ trợ")
+
+    # ==== Kết thúc ====
     c.showPage()
     c.save()
     buffer.seek(0)
