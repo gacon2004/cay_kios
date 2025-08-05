@@ -12,7 +12,7 @@ class AppointmentUpdateModel(BaseModel):
     doctor_id: Optional[int]
     appointment_time: Optional[datetime]
     status: Optional[str]
-    
+
 class AppointmentResponseModel(BaseModel):
     id: int
     patient_id: int

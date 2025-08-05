@@ -16,7 +16,6 @@ class ClinicResponseModel(BaseModel):
     name: str
     location: Optional[str] = None
     status: Optional[str] = None
-
     class Config:
         from_attributes = True
 

@@ -11,7 +11,7 @@ class PatientUpdateRequestModel(BaseModel):
     date_of_birth: Optional[date] = None
     gender: Optional[str] = None
     phone: Optional[str] = None
-    ward: Optional[str]    
+    ward: Optional[str]
     province: Optional[str]
     occupation: Optional[str] = None
     ethnicity: Optional[str] = None

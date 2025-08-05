@@ -10,7 +10,7 @@ from backend.appointments.models import (
 from backend.appointments.controllers import (
     create_appointment,
     get_my_appointments,
-    update_appointment, 
+    update_appointment,
     delete_appointment,
 )
 
