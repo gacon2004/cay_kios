@@ -40,6 +40,7 @@ const PatientInfo: React.FC = () => {
             const insuranceResponse = await api.get(
                 `/insurances/check/${cccdValue}`
             );
+
             if (!insuranceResponse?.data?.has_insurance) {
                 toast({
                     title: '🚧 Không tìm thấy thông tin bảo hiểm !',
@@ -47,6 +48,12 @@ const PatientInfo: React.FC = () => {
                 });
                 router.push('/');
                 return;
+            } else {
+                // Lưu biến nếu có bảo hiểm
+                const hasInsurance = insuranceResponse.data.has_insurance;
+                
+                localStorage.setItem('has_insurance', JSON.stringify(hasInsurance));            
+                console.log('✅ Có bảo hiểm:', hasInsurance);
             }
 
             // Đăng nhập bệnh nhân
