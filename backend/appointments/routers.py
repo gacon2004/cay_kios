@@ -27,12 +27,12 @@ router = APIRouter(
 def register_appointment(
     data: AppointmentCreateModel,
     current_user: Annotated[dict, Depends(auth_patient_handler.get_current_patient_user)],
-    insurances: Annotated[bool, Query(description="Có sử dụng bảo hiểm hay không")]
+    has_insurances: Annotated[bool, Query(description="Có sử dụng bảo hiểm hay không")]
 ):
     """
     Tạo một cuộc hẹn mới cho bệnh nhân đang đăng nhập
     """
-    return create_appointment(current_user["id"], insurances, data)
+    return create_appointment(current_user["id"], has_insurances, data)
 
 
 @router.get("/me", response_model=list[AppointmentResponseModel])
@@ -63,7 +63,7 @@ def admin_delete_appointment(
 def print_pdf(
     appointment_id: int,
     current_user: Annotated[dict, Depends(auth_patient_handler.get_current_patient_user)],
-    insurances: Annotated[bool, Query(description="Có sử dụng bảo hiểm hay không")]
+    has_insurances: Annotated[bool, Query(description="Có sử dụng bảo hiểm hay không")]
 ):
-    return print_appointment_pdf(appointment_id, insurances, current_user["id"])
+    return print_appointment_pdf(appointment_id, has_insurances, current_user["id"])
 
