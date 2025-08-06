@@ -48,4 +48,4 @@ def delete_doctor(doctor_id: int) -> None:
     sql = "DELETE FROM doctors WHERE id = %s"
     affected = database.query_put(sql, (doctor_id,))
     if affected == 0:
-        raise HTTPException(status_code=404, detail="Không tìm thấy bác sĩ")
+        raise HTTPException(status_code=404, detail="không tìm thấy bác sĩ")

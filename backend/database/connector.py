@@ -55,7 +55,7 @@ class DatabaseConnector:
                 with connection.cursor() as cursor:
                     cursor.execute(sql, param)
                     connection.commit()
-                    return cursor.lastrowid
+                    return cursor.rowcount
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
