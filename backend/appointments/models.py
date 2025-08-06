@@ -28,3 +28,4 @@ class AppointmentResponseModel(BaseModel):
     doctor_name: str
     clinic_name: str
     service_price: int
+    cur_price : int

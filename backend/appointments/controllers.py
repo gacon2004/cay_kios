@@ -1,3 +1,4 @@
+
 from fastapi import HTTPException
 from backend.database.connector import DatabaseConnector
 from backend.appointments.models import AppointmentCreateModel, AppointmentUpdateModel
@@ -15,6 +16,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from io import BytesIO
 db = DatabaseConnector()
 
+
 def generate_qr_code(data: dict) -> str:
     qr = qrcode.QRCode(version=1, box_size=10, border=4)
     qr.add_data(data)
@@ -25,7 +27,7 @@ def generate_qr_code(data: dict) -> str:
     img_bytes = buffer.getvalue()
     return base64.b64encode(img_bytes).decode("utf-8")
 
-def create_appointment(patient_id: int, data: AppointmentCreateModel) -> dict:
+def create_appointment(patient_id: int, insurances: bool, data: AppointmentCreateModel) -> dict:
     queue_sql = """
         SELECT COALESCE(MAX(queue_number), 0) + 1 AS next_queue
         FROM appointments
@@ -35,26 +37,35 @@ def create_appointment(patient_id: int, data: AppointmentCreateModel) -> dict:
     queue_number = queue_result[0]["next_queue"]
 
     now = datetime.now()
-
+    price_result = db.query_get(
+        " SELECT price FROM services WHERE id = %s",
+        (data.service_id,)
+    )
+    price = price_result[0]
+    cur_price = price["price"]
+    if insurances:
+        cr_price = cur_price/2
+    else:
+        cr_price = cur_price
     # 1. Insert Appointment
     insert_sql = """
         INSERT INTO appointments (
             patient_id, clinic_id, service_id, doctor_id,
-            queue_number, appointment_time, printed, status
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            queue_number, appointment_time, printed, status, cur_price
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
     """
     db.query_put(
         insert_sql,
         (
             patient_id, data.clinic_id, data.service_id, data.doctor_id,
-            queue_number, now, False, "waiting"
+            queue_number, now, False, "waiting", cr_price
         )
     )
 
     # 2. Get latest appointment by patient (ORDER BY id)
     result = db.query_get(
         """
-        SELECT a.*, s.name AS service_name, s.price AS service_price,
+        SELECT a.*, s.name AS service_name, s.price AS service_price,a.cur_price AS cur_price,
                d.full_name AS doctor_name, c.name AS clinic_name
         FROM appointments a
         JOIN services s ON a.service_id = s.id
@@ -100,7 +111,7 @@ def create_appointment(patient_id: int, data: AppointmentCreateModel) -> dict:
 
 def get_my_appointments(patient_id: int) -> list[dict]:
     sql = """
-        SELECT a.*, s.name AS service_name, s.price AS service_price,
+        SELECT a.*, s.name AS service_name, a.cur_price AS service_price,
                d.full_name AS doctor_name, c.name AS clinic_name
         FROM appointments a
         JOIN services s ON a.service_id = s.id
@@ -140,11 +151,11 @@ def delete_appointment(appointment_id: int) -> dict:
 pdfmetrics.registerFont(TTFont("DejaVu", "backend/fonts/DejaVuSans.ttf"))
 pdfmetrics.registerFont(TTFont("DejaVu-Bold", "backend/fonts/DejaVuSans-Bold.ttf"))
 
-def print_appointment_pdf(appointment_id: int, user_id: int) -> StreamingResponse:
+def print_appointment_pdf(appointment_id: int, insurances: bool, user_id: int) -> StreamingResponse:
     # 1. Lấy thông tin phiếu
     result = db.query_get("""
         SELECT a.*, p.full_name, p.national_id, p.date_of_birth, p.gender, p.phone,
-               s.name AS service_name, s.price AS service_price,
+               s.name AS service_name, a.cur_price AS service_price,
                d.full_name AS doctor_name, c.name AS clinic_name
         FROM appointments a
         JOIN patients p ON a.patient_id = p.id
@@ -163,6 +174,8 @@ def print_appointment_pdf(appointment_id: int, user_id: int) -> StreamingRespons
     if a["patient_id"] != user_id:
         raise HTTPException(status_code=403, detail="Bạn không có quyền in phiếu khám này")
 
+
+    formatted_price = f"{a['service_price']:,.0f} VNĐ"
     # 3. Tạo PDF
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
@@ -213,7 +226,8 @@ def print_appointment_pdf(appointment_id: int, user_id: int) -> StreamingRespons
     c.drawString(right_x + 10, top_y - 58, f"Phòng: {a['clinic_name']}")
     c.drawString(right_x + 10, top_y - 76, f"Bác sĩ: {a['doctor_name']}")
     c.drawString(right_x + 10, top_y - 94, f"Số thứ tự: {a['queue_number']}")
-    c.drawString(right_x + 10, top_y - 112, f"Thời gian: {a['appointment_time'].strftime('%H:%M:%S %d/%m/%Y')}")
+    c.drawString(right_x + 10, top_y - 112, f"Giá tiền: {formatted_price}")
+    c.drawString(right_x + 10, top_y - 130, f"Thời gian: {a['appointment_time'].strftime('%H:%M:%S %d/%m/%Y')}")
 
     # ==== QR Code ====
     if a.get("qr_code"):

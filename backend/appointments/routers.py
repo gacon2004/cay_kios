@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Path
+from fastapi import APIRouter, Depends, Path, Query
 from typing import Annotated
 from backend.auth.providers.auth_providers import AuthProvider
 from backend.auth.providers.partient_provider import PatientProvider
@@ -26,12 +26,13 @@ router = APIRouter(
 @router.post("/", response_model=AppointmentResponseModel)
 def register_appointment(
     data: AppointmentCreateModel,
-    current_user: Annotated[dict, Depends(auth_patient_handler.get_current_patient_user)]
+    current_user: Annotated[dict, Depends(auth_patient_handler.get_current_patient_user)],
+    insurances: Annotated[bool, Query(description="Có sử dụng bảo hiểm hay không")]
 ):
     """
     Tạo một cuộc hẹn mới cho bệnh nhân đang đăng nhập
     """
-    return create_appointment(current_user["id"], data)
+    return create_appointment(current_user["id"], insurances, data)
 
 
 @router.get("/me", response_model=list[AppointmentResponseModel])
@@ -61,7 +62,8 @@ def admin_delete_appointment(
 @router.get("/{appointment_id}/print")
 def print_pdf(
     appointment_id: int,
-    current_user: Annotated[dict, Depends(auth_patient_handler.get_current_patient_user)]
+    current_user: Annotated[dict, Depends(auth_patient_handler.get_current_patient_user)],
+    insurances: Annotated[bool, Query(description="Có sử dụng bảo hiểm hay không")]
 ):
-    return print_appointment_pdf(appointment_id, current_user["id"])
+    return print_appointment_pdf(appointment_id, insurances, current_user["id"])
 
