@@ -27,7 +27,7 @@ def generate_qr_code(data: dict) -> str:
     img_bytes = buffer.getvalue()
     return base64.b64encode(img_bytes).decode("utf-8")
 
-def create_appointment(patient_id: int, insurances: bool, data: AppointmentCreateModel) -> dict:
+def create_appointment(patient_id: int, has_insurances: bool, data: AppointmentCreateModel) -> dict:
     queue_sql = """
         SELECT COALESCE(MAX(queue_number), 0) + 1 AS next_queue
         FROM appointments
@@ -43,7 +43,7 @@ def create_appointment(patient_id: int, insurances: bool, data: AppointmentCreat
     )
     price = price_result[0]
     cur_price = price["price"]
-    if insurances:
+    if has_insurances:
         cr_price = cur_price/2
     else:
         cr_price = cur_price
@@ -151,7 +151,7 @@ def delete_appointment(appointment_id: int) -> dict:
 pdfmetrics.registerFont(TTFont("DejaVu", "backend/fonts/DejaVuSans.ttf"))
 pdfmetrics.registerFont(TTFont("DejaVu-Bold", "backend/fonts/DejaVuSans-Bold.ttf"))
 
-def print_appointment_pdf(appointment_id: int, insurances: bool, user_id: int) -> StreamingResponse:
+def print_appointment_pdf(appointment_id: int, has_insurances: bool, user_id: int) -> StreamingResponse:
     # 1. Lấy thông tin phiếu
     result = db.query_get("""
         SELECT a.*, p.full_name, p.national_id, p.date_of_birth, p.gender, p.phone,
