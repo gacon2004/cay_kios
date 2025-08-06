@@ -36,7 +36,7 @@ const ServiceSelection: React.FC = () => {
 
     const handleRoomSelect = async (room: Room) => {
         if (!selectedService) return;
-        const appointmentData = await api.post(`/appointments/`, {
+        const appointmentData = await api.post(`/appointments/?has_insurances=${localStorage.getItem("has_insurances")}`, {
             service_id: selectedService.id,
             clinic_id: room.clinic_id,
             doctor_id: room.doctor_id,

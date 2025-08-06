@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Stethoscope, AlertCircle } from 'lucide-react';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const [username, setEmail] = useState('');
@@ -25,21 +26,27 @@ export default function LoginPage() {
     setError('');
 
     try {
-      
       const response = await axiosInstance.post('/auth/signin', {
         username,
         password,
       });
-      const user = response.data.user 
-      const token = response.data.token.access_token
-      
-      login(user, token);
+      const { user, token } = response.data;
+
+      // Store tokens in localStorage
+      localStorage.setItem('access_token', token.access_token);
+      localStorage.setItem('refresh_token', token.refresh_token);
+
+      login(user, token.access_token);
       router.push('/admin/dashboard');
     } catch (error: any) {
-      setError(error.response?.data?.message || 'Login failed. Please try again.');
+      setError(error.response?.data?.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleRegisterRedirect = () => {
+    router.push('/admin/register');
   };
 
   return (
@@ -53,7 +60,7 @@ export default function LoginPage() {
           </div>
           <CardTitle className="text-2xl font-bold">MedKiosk Admin</CardTitle>
           <CardDescription>
-            Sign in to access the administration dashboard
+            Đăng nhập để truy cập bảng điều khiển quản trị
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -66,7 +73,7 @@ export default function LoginPage() {
             )}
             
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username">Tên đăng nhập</Label>
               <Input
                 id="username"
                 type="text"
@@ -79,13 +86,13 @@ export default function LoginPage() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Mật khẩu</Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
+                placeholder="Nhập mật khẩu của bạn"
                 required
                 disabled={isLoading}
               />
@@ -95,12 +102,23 @@ export default function LoginPage() {
               {isLoading ? (
                 <>
                   <LoadingSpinner size="sm" className="mr-2" />
-                  Signing in...
+                  Đang đăng nhập...
                 </>
               ) : (
-                'Sign In'
+                'Đăng Nhập'
               )}
             </Button>
+
+            <Button 
+              type="button" 
+              variant="outline" 
+              className="w-full mt-2" 
+              onClick={handleRegisterRedirect}
+              disabled={isLoading}
+            >
+              Đăng Ký
+            </Button>
+           
           </form>
         </CardContent>
       </Card>

@@ -9,7 +9,7 @@ const instance = axios.create({
       Authorization: undefined,
     },
   },
-  maxRedirects: 5, // Cho phép tối đa 5 lần chuyển hướng
+  maxRedirects: 5,
 });
 
 // Interceptor cho request để thêm token
@@ -38,21 +38,37 @@ instance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    if (error.response?.status === 307 && originalRequest) {
+    const currentPath =
+      typeof window !== "undefined" ? window.location.pathname : "";
+
+    // Xử lý chuyển hướng 307
+    if (
+      error.response?.status === 307 &&
+      originalRequest &&
+      !originalRequest._retry
+    ) {
       console.log("Detected 307 redirect, retrying with Authorization...");
+      originalRequest._retry = true; // Đánh dấu để tránh vòng lặp vô hạn
       const token = localStorage.getItem("token");
       if (token) {
         originalRequest.headers.Authorization = `Bearer ${token}`;
       }
-      return instance(originalRequest); // Gửi lại yêu cầu với header
+      return instance(originalRequest);
     }
-    if (error.response?.status === 401) {
+
+    // Xử lý lỗi 401, nhưng không chuyển hướng nếu đang ở /admin/login hoặc /admin/register
+    if (
+      error.response?.status === 401 &&
+      !currentPath.startsWith("/admin/login") &&
+      !currentPath.startsWith("/admin/register")
+    ) {
       console.log("401 Unauthorized, xóa token và chuyển hướng");
       if (typeof window !== "undefined") {
         localStorage.removeItem("token");
         window.location.href = "/admin/login";
       }
     }
+
     return Promise.reject(error);
   }
 );
