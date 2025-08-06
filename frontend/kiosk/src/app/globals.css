@@ -1,0 +1,75 @@
+@import 'tailwindcss';
+
+@layer base {
+    :root {
+        --background: #006e66;
+        --background-secondary: #e8efff;
+        --text: #fff;
+        --while: #fff;
+        --foreground: #171717;
+        --troll: red;
+    }
+}
+
+@theme inline {
+    --color-background: var(--background);
+    --color-background-secondary: var(--background-secondary);
+    --color-foreground: var(--troll);
+    --color-text: var(--text);
+    --color-while: var(--while);
+    --font-sans: var(--font-geist-sans);
+    --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --background: #0a0a0a;
+        --foreground: #ededed;
+    }
+}
+
+body {
+    font-family: ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', Segoe UI Symbol, 'Noto Color Emoji';
+}
+
+@layer utilities {
+    .animate-toast-in {
+        animation: toastIn 0.3s ease-out;
+    }
+    .animate-toast-out {
+        animation: toastOut 0.3s ease-in;
+    }
+
+    @keyframes toastIn {
+        from {
+            transform: translateY(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    @keyframes toastOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+}
+
+/* Toast styles */
+.toast {
+    @apply relative flex w-full items-center justify-between space-x-4 rounded-md border p-6 pr-8 shadow-lg;
+    transition: all 0.3s ease;
+}
+
+.toast:hover {
+    @apply shadow-xl;
+    transform: translateX(-4px);
+}
