@@ -3,22 +3,29 @@ import axios from "axios";
 
 const BASE_URL = "http://localhost:8000"; // sửa nếu cần
 
-export const createAppointment = async (formData, token) => {
-  try {
-    const response = await axios.post(
-      `${BASE_URL}/appointments`,
-      formData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`, // QUAN TRỌNG
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    return response.data;
-  } catch (error) {
-    const detail =
-      error.response?.data?.detail || "Lỗi kết nối hoặc không xác định";
-    throw new Error(detail);
+// file: ../api/appointment.js
+
+export const createAppointment = async (formData, token, hasInsurance) => {
+  const url = `http://localhost:8000/appointments?insurances=${hasInsurance}`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      clinic_id: formData.clinic_id,
+      service_id: formData.service_id,
+      doctor_id: formData.doctor_id,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    // Ném lỗi chi tiết từ server
+    throw new Error(JSON.stringify(errorData, null, 2) || "Lỗi không xác định từ server");
   }
+
+  return response.json();
 };
