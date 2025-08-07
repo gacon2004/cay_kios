@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import { User } from '@/types';
+import { create } from "zustand";
+import { User } from "@/types";
 
 interface AuthState {
   user: User | null;
@@ -17,36 +17,41 @@ export const useAuthStore = create<AuthState>((set) => ({
   token: null,
   isAuthenticated: false,
   isLoading: true,
-  
+
   login: (user: User, token: string) => {
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
+    localStorage.setItem("token", token);
+    localStorage.setItem("user", JSON.stringify(user));
     set({ user, token, isAuthenticated: true, isLoading: false });
   },
-  
+
   logout: () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
     set({ user: null, token: null, isAuthenticated: false, isLoading: false });
   },
-  
+
   setLoading: (loading: boolean) => {
     set({ isLoading: loading });
   },
-  
+
   initializeAuth: () => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('token');
-      const userStr = localStorage.getItem('user');
-      
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      const userStr = localStorage.getItem("user");
+
       if (token && userStr) {
         try {
           const user = JSON.parse(userStr);
           set({ user, token, isAuthenticated: true, isLoading: false });
         } catch {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          set({ user: null, token: null, isAuthenticated: false, isLoading: false });
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          set({
+            user: null,
+            token: null,
+            isAuthenticated: false,
+            isLoading: false,
+          });
         }
       } else {
         set({ isLoading: false });

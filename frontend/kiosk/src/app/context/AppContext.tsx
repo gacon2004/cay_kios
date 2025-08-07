@@ -32,6 +32,7 @@ interface Room {
 }
 
 interface Appointment {
+    id: number;
     clinic_name: string;
     doctor_name: string;
     queue_number: number;
