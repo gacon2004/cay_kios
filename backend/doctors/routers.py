@@ -87,10 +87,10 @@ def update_doctor_api(
     return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(updated))
 
 
-@router.delete("/{doctor_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{doctor_id}", status_code=status.HTTP_200_OK)
 def delete_doctor_api(
     doctor_id: int,
     current_user: DoctorUser = Depends(auth_handler.get_current_admin_user),
 ):
     delete_doctor(doctor_id)
-    return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=None)
+    return {"message": "Xóa bác sĩ thành công"}
