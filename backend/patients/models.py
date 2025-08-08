@@ -12,6 +12,7 @@ class PatientUpdateRequestModel(BaseModel):
     gender: Optional[str] = None
     phone: Optional[str] = None
     ward: Optional[str]
+    district: Optional[str]
     province: Optional[str]
     occupation: Optional[str] = None
     ethnicity: Optional[str] = None
@@ -37,6 +38,7 @@ class PatientResponseModel(BaseModel):
     gender: Optional[str]
     phone: Optional[str]
     ward: Optional[str]    
+    district: Optional[str]
     province: Optional[str]
     occupation: Optional[str]
     ethnicity: Optional[str]
