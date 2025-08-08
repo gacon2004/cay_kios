@@ -12,6 +12,7 @@ class PatientSignUpRequestModel(BaseModel):
     gender: Optional[str] = None
     phone: Optional[str] = None
     ward: Optional[str] = None   
+    district: Optional[str] = None
     province: Optional[str] = None 
     occupation: Optional[str] = None
     ethnicity: Optional[str] = None

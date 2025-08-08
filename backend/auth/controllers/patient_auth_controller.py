@@ -23,8 +23,8 @@ def register_patient(data: PatientSignUpRequestModel) -> PatientResponseModel:
         """
         INSERT INTO patients (
             national_id, full_name, date_of_birth,
-            gender, phone, ward, province, occupation, ethnicity
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            gender, phone, ward, district, province, occupation, ethnicity
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """,
         (
             data.national_id,
@@ -33,6 +33,7 @@ def register_patient(data: PatientSignUpRequestModel) -> PatientResponseModel:
             data.gender,
             data.phone,
             data.ward,
+            data.district,
             data.province,
             data.occupation,
             data.ethnicity,
@@ -42,7 +43,7 @@ def register_patient(data: PatientSignUpRequestModel) -> PatientResponseModel:
     user = db.query_get(
         """
         SELECT id, national_id, full_name, date_of_birth, gender,
-               phone, ward, province, occupation, ethnicity
+               phone, ward, district, province, occupation, ethnicity
         FROM patients WHERE national_id = %s
         """,
         (data.national_id,)

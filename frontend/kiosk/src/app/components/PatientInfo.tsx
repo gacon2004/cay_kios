@@ -52,7 +52,7 @@ const PatientInfo: React.FC = () => {
                 // Lưu biến nếu có bảo hiểm
                 const hasInsurance = insuranceResponse.data.has_insurance;
                 
-                localStorage.setItem('has_insurance', JSON.stringify(hasInsurance));            
+                localStorage.setItem('has_insurances', JSON.stringify(hasInsurance));            
                 console.log('✅ Có bảo hiểm:', hasInsurance);
             }
 

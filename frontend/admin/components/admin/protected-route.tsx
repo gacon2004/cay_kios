@@ -18,7 +18,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   }, [initializeAuth]);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    const publicPaths = ['/admin/login', '/admin/register'];
+    const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+
+    if (!isLoading && !isAuthenticated && !publicPaths.includes(currentPath)) {
+      console.log('Redirecting to /admin/login due to unauthenticated access on non-public page');
       router.push('/admin/login');
     }
   }, [isAuthenticated, isLoading, router]);
@@ -31,7 +35,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !['/admin/login', '/admin/register'].includes(typeof window !== 'undefined' ? window.location.pathname : '')) {
     return null;
   }
 

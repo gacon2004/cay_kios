@@ -96,7 +96,7 @@ def create_appointment(patient_id: int, has_insurances: bool, data: AppointmentC
         "appointment_id": appointment_id,
         "patient_name": patient["full_name"],
         "service_name": appointment["service_name"],
-        "price": appointment["service_price"],
+        "price": appointment["cur_price"],
         "queue_number": queue_number,
         "created_at": now.isoformat()
     }
