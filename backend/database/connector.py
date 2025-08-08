@@ -33,6 +33,9 @@ class DatabaseConnector:
             cursorclass=pymysql.cursors.DictCursor,
             conv=self.conversions,
         )
+        with connection.cursor() as cursor:
+                cursor.execute("SET time_zone = '+07:00';")
+
         return connection
 
     def query_get(self, sql, param):

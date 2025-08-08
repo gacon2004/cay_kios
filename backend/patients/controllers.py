@@ -12,7 +12,7 @@ def get_patient_profile(current_user: AuthUser) -> dict:
     patient = db.query_get(
         """
         SELECT id, national_id, full_name, date_of_birth, gender, phone,
-               ward, province, occupation, ethnicity, created_at
+               ward, district, province, occupation, ethnicity, created_at
         FROM patients
         WHERE id = %s
         """,
@@ -63,6 +63,7 @@ def get_all_patients(limit: int = 10, offset: int = 0) -> list[dict]:
             gender,
             phone,
             ward,
+            district,
             province,
             occupation,
             ethnicity,
@@ -94,6 +95,7 @@ def get_patient_by_id(id: int) -> dict:
             gender,
             phone,
             ward,
+            district,
             province,
             occupation,
             ethnicity,
