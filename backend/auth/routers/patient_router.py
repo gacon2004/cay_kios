@@ -30,7 +30,6 @@ def token_by_cccd(user_cccd: CCCDRequestModel):
         content=jsonable_encoder(result)
     )
 
-
 @router.post("/register", response_model=UserAuthResponseModel)
 def patient_register(user_details: PatientSignUpRequestModel):
     """
