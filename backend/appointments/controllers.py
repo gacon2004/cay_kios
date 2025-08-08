@@ -14,6 +14,7 @@ import qrcode
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from io import BytesIO
+from datetime import datetime, timezone, timedelta
 db = DatabaseConnector()
 
 
@@ -28,6 +29,7 @@ def generate_qr_code(data: dict) -> str:
     return base64.b64encode(img_bytes).decode("utf-8")
 
 def create_appointment(patient_id: int, has_insurances: bool, data: AppointmentCreateModel) -> dict:
+    tz_utc7 = timezone(timedelta(hours=7))
     queue_sql = """
         SELECT COALESCE(MAX(queue_number), 0) + 1 AS next_queue
         FROM appointments
@@ -36,7 +38,7 @@ def create_appointment(patient_id: int, has_insurances: bool, data: AppointmentC
     queue_result = db.query_get(queue_sql, (data.clinic_id,))
     queue_number = queue_result[0]["next_queue"]
 
-    now = datetime.now()
+    now = datetime.now(tz_utc7)
     price_result = db.query_get(
         " SELECT price FROM services WHERE id = %s",
         (data.service_id,)
