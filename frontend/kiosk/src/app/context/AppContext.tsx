@@ -10,6 +10,7 @@ interface Patient {
     gender: string;
     phone: string;
     ward: string;
+    district: string;
     province: string;
     ethnicity: string;
     occupation: string;

@@ -23,11 +23,11 @@ const NumericKeyboard: React.FC<NumericKeyboardProps> = ({
 
     const handleBackspace = () => {
         const newValue = value.slice(0, -1);
-        onChange(newValue || '0'); // Trả về '0' nếu chuỗi rỗng
+        onChange(newValue); // Trả về '0' nếu chuỗi rỗng
     };
 
     const handleClear = () => {
-        onChange('0'); // Đặt lại về '0'
+        onChange(''); // Đặt lại về '0'
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -93,13 +93,13 @@ const NumericKeyboard: React.FC<NumericKeyboardProps> = ({
                     <input
                         ref={inputRef}
                         type="text"
-                        value={value || '0'}
+                        value={value}
                         onChange={e => {
                             const newValue = e.target.value.replace(
                                 /[^0-9]/g,
                                 ''
                             );
-                            onChange(newValue || '0');
+                            onChange(newValue || '');
                         }}
                         className="w-full bg-gray-100 rounded-xl p-4 text-center text-2xl font-mono text-gray-900 focus:outline-none"
                         maxLength={maxLength}
