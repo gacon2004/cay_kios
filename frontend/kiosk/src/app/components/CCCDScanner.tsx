@@ -83,7 +83,6 @@ const CCCDScanner = ({ onScanSuccess, onClose }: CCCDScannerProps) => {
             codeReaderRef.current = new BrowserQRCodeReader();
 
             // Start scanning with default camera
-            console.log('Starting ZXing scanner with default camera...');
             controlsRef.current =
                 await codeReaderRef.current.decodeFromVideoDevice(
                     undefined, // Use default camera
@@ -188,7 +187,7 @@ const CCCDScanner = ({ onScanSuccess, onClose }: CCCDScannerProps) => {
                             style={{
                                 minHeight: '400px',
                                 objectFit: 'cover',
-                                filter: 'contrast(1.5) brightness(1.2)',
+                                filter: 'contrast(1.5) brightness(1.1)',
                             }}
                         />
                         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 border-2 border-dashed border-red-500 w-[400px] h-[400px] opacity-50" />
