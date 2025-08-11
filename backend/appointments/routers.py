@@ -1,11 +1,15 @@
-from fastapi import APIRouter, Depends, Path, Query
+from fastapi import APIRouter, status, Depends, Path, Query
 from typing import Annotated
 from backend.auth.providers.auth_providers import AuthProvider
 from backend.auth.providers.partient_provider import PatientProvider
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 from backend.appointments.models import (
     AppointmentCreateModel,
     AppointmentResponseModel,
     AppointmentUpdateModel,
+    AppointmentCancelResponse,
+    AppointmentCreateBySlotModel
 )
 from backend.appointments.controllers import (
     create_appointment,
@@ -13,6 +17,8 @@ from backend.appointments.controllers import (
     update_appointment,
     delete_appointment,
     print_appointment_pdf,
+    create_appointment_by_slot,
+    cancel_appointment_by_patient
 )
 
 auth_admin_handler = AuthProvider()
@@ -67,3 +73,27 @@ def print_pdf(
 ):
     return print_appointment_pdf(appointment_id, has_insurances, current_user["id"])
 
+# (1) Tạo lịch hẹn theo giờ đã chọn (slot)
+@router.post("/slot", response_model=AppointmentResponseModel)
+def create_my_appointment_by_slot(
+    data: AppointmentCreateBySlotModel,
+    current_user: Annotated[dict, Depends(auth_patient_handler.get_current_patient_user)]
+):
+    """
+    Bệnh nhân tạo lịch theo slot_start đã chọn. 
+    Trả về chi tiết AppointmentResponseModel.
+    """
+    detail = create_appointment_by_slot(current_user["id"], data)
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content=jsonable_encoder(detail))
+
+# (2) Bệnh nhân hủy lịch của chính mình
+@router.post("/{appointment_id}/cancel", response_model=AppointmentCancelResponse)
+def cancel_my_appointment(
+    appointment_id: int = Path(...),
+    current_user: Annotated[dict, Depends(auth_patient_handler.get_current_patient_user)] = None
+):
+    """
+    Bệnh nhân hủy lịch của chính mình. Chỉ cho hủy khi trạng thái còn hiệu lực.
+    """
+    res = cancel_appointment_by_patient(appointment_id, current_user["id"])
+    return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(res))

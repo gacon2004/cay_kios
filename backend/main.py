@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from datetime import datetime, timedelta, timezone
+from starlette.middleware.base import BaseHTTPMiddleware
 from backend.auth.routers.patient_router import router as auth_patient_router
 from backend.auth.routers.auth_router import router as auth_unified_router
 from backend.doctors.routers import router as doctor_router
@@ -10,6 +12,7 @@ from backend.clinics.routers import router as clinics_router
 from backend.appointments.routers import router as appointments_router
 from backend.clinic_doctor_asignments.routers import router as clinic_doctor_asignments_router
 from backend.users.routers import router as users_router
+from backend.schedule_doctors.routers import router as schedule_doctors_router
 from dotenv import load_dotenv
 import os
 
@@ -28,6 +31,17 @@ app = FastAPI(
     redoc_url="/v1/redoc",
     openapi_url="/v1/openapi.json",
 )
+
+# Middleware set timezone +7
+class TimezoneMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        # Thiết lập giờ VN (UTC+7)
+        request.state.now = datetime.now(timezone(timedelta(hours=7)))
+        response = await call_next(request)
+        return response
+
+# Đăng ký middleware
+app.add_middleware(TimezoneMiddleware)
 
 @app.get("/")
 def root():
@@ -64,4 +78,5 @@ app.include_router(services_router)
 app.include_router(clinics_router)
 app.include_router(appointments_router)
 app.include_router(clinic_doctor_asignments_router)
+app.include_router(schedule_doctors_router)
 app.include_router(users_router)

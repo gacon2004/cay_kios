@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, date, time
 from typing import Optional
 
 class AppointmentCreateModel(BaseModel):
@@ -29,3 +29,16 @@ class AppointmentResponseModel(BaseModel):
     clinic_name: str
     service_price: int
     cur_price : int
+
+class AppointmentCreateBySlotModel(BaseModel):
+    # patient_id sẽ gán từ token ở router, không nhận từ client
+    patient_id: Optional[int] = None
+    clinic_id: int
+    service_id: int
+    doctor_id: int
+    slot_start: datetime
+    price: float = 0.0
+
+# --- MODEL MỚI: response hủy lịch ---
+class AppointmentCancelResponse(BaseModel):
+    ok: bool = True

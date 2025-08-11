@@ -1,7 +1,12 @@
 
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from backend.database.connector import DatabaseConnector
-from backend.appointments.models import AppointmentCreateModel, AppointmentUpdateModel
+from backend.appointments.models import (
+    AppointmentCreateModel,
+    AppointmentUpdateModel, 
+    AppointmentCreateBySlotModel,
+    AppointmentCancelResponse
+)    
 from datetime import datetime
 from fastapi import HTTPException
 from fastapi.responses import StreamingResponse
@@ -264,3 +269,57 @@ def print_appointment_pdf(appointment_id: int, has_insurances: bool, user_id: in
         media_type="application/pdf",
         headers={"Content-Disposition": f"inline; filename=phieu_kham_{appointment_id}.pdf"}
     )
+
+def create_appointment_by_slot(patient_id: int, data: AppointmentCreateBySlotModel) -> dict:
+    """
+    Đặt lịch theo slot_start (gọi SP sp_book_appointment) rồi SELECT lại chi tiết
+    để trả về đúng AppointmentResponseModel.
+    """
+    try:
+        sets = db.call_proc("sp_book_appointment", (
+            patient_id, data.clinic_id, data.service_id,
+            data.doctor_id, data.slot_start, data.price
+        ))
+        if not sets or not sets[0]:
+            raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Không tạo được lịch")
+
+        new_id = sets[0][0]["id"]
+
+        # SELECT lại chi tiết để trả đúng AppointmentResponseModel
+        row = db.query_get("""
+            SELECT a.*, 
+                   s.name  AS service_name, 
+                   s.price AS service_price,
+                   a.cur_price AS cur_price,
+                   d.full_name AS doctor_name, 
+                   c.name AS clinic_name
+            FROM appointments a
+            JOIN services s ON a.service_id = s.id
+            JOIN doctors  d ON a.doctor_id = d.id
+            JOIN clinics  c ON a.clinic_id = c.id
+            WHERE a.id = %s
+            LIMIT 1
+        """, (new_id,))
+        if not row:
+            raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Không đọc được chi tiết lịch vừa tạo")
+
+        return row[0]
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Đặt lịch thất bại: {e}")
+
+def cancel_appointment_by_patient(appointment_id: int, patient_id: int) -> dict:
+    """
+    Bệnh nhân hủy lịch của chính mình (gọi SP sp_cancel_appointment_by_patient).
+    """
+    try:
+        sets = db.call_proc("sp_cancel_appointment_by_patient", (appointment_id, patient_id))
+        affected = (sets[0][0]["affected"] if sets and sets[0] else 0)
+        if affected == 0:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Không thể hủy (không thuộc bạn hoặc trạng thái không cho phép)")
+        return {"ok": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Hủy lịch thất bại: {e}")
