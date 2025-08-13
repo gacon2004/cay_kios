@@ -13,6 +13,7 @@ from backend.appointments.routers import router as appointments_router
 from backend.clinic_doctor_asignments.routers import router as clinic_doctor_asignments_router
 from backend.users.routers import router as users_router
 from backend.schedule_doctors.routers import router as schedule_doctors_router
+from backend.payments.routers import router as payments_router
 from dotenv import load_dotenv
 import os
 
@@ -80,3 +81,4 @@ app.include_router(appointments_router)
 app.include_router(clinic_doctor_asignments_router)
 app.include_router(schedule_doctors_router)
 app.include_router(users_router)
+app.include_router(payments_router)
