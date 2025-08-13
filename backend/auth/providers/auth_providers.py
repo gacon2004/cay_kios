@@ -46,7 +46,7 @@ class DoctorUser(BaseModel):
 
 class AuthProvider:
     ALGORITHM = "HS256"
-    TOKEN_EXPIRE_MINS = 30
+    TOKEN_EXPIRE_MINS = 300
     REFRESH_TOKEN_EXPIRE_HOURS = 10
     PWD_CONTEXT = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

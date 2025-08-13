@@ -1,85 +1,63 @@
-from fastapi import APIRouter, Depends, status, Query
-from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
 from typing import List
-from datetime import date
-
-from backend.auth.providers.auth_providers import AuthProvider
+from fastapi import APIRouter, Depends, status
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
+from backend.auth.providers.partient_provider import PatientProvider, AuthUser
+from backend.auth.providers.auth_providers import AuthProvider, DoctorUser
 from backend.schedule_doctors.models import (
-    ShiftResponseModel,
     ShiftCreateRequestModel,
-    ShiftUpdateRequestModel,
-    MonthBulkCreateRequestModel,
+    MultiShiftBulkCreateRequestModel,
+    ShiftResponseModel,
+    CalendarDayDTO,
+    DayShiftDTO,
 )
 from backend.schedule_doctors.controllers import (
-    create_shift_for_doctor,
-    update_shift_for_doctor,
-    delete_shift_for_doctor,
-    bulk_create_month_for_doctor,
-    get_calendar_month_for_doctor,
-    get_calendar_day_for_doctor,
+    create_shift,
+    bulk_create_shifts,
+    get_calendar_days,
+    get_day_shifts,
 )
 
-router = APIRouter(prefix="/schedule-doctors", tags=["ScheduleDoctors"])
-auth = AuthProvider()
+router = APIRouter(prefix="/schedule-doctors", tags=["Schedule Doctors"])
+auth_handler = AuthProvider()
+patient_handler = PatientProvider()
 
-# ---------------- CREATE ----------------
-# POST /schedule-doctors
-@router.post("", response_model=ShiftResponseModel)
-def create_shift_api(
+# Admin tạo 1 ca
+@router.post("/shifts", response_model=ShiftResponseModel)
+def api_create_shift(
     payload: ShiftCreateRequestModel,
-    current_user: dict = Depends(auth.get_current_doctor_user),
+    current_user: DoctorUser = Depends(auth_handler.get_current_doctor_user),
 ):
-    row = create_shift_for_doctor(current_user["id"], payload)
-    return JSONResponse(status_code=status.HTTP_201_CREATED, content=jsonable_encoder(row))
+    data = create_shift(payload)
+    return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(data))
 
-# POST /schedule-doctors/month/bulk
-@router.post("/month/bulk", response_model=List[ShiftResponseModel])
-def bulk_create_month_api(
-    payload: MonthBulkCreateRequestModel,
-    current_user: dict = Depends(auth.get_current_doctor_user),
+# Admin tạo nhiều ca (nhiều khung giờ/ngày)
+@router.post("/shifts/bulk")
+def api_bulk_create_shifts(
+    payload: MultiShiftBulkCreateRequestModel,
+    current_user: DoctorUser = Depends(auth_handler.get_current_doctor_user),
 ):
-    rows = bulk_create_month_for_doctor(current_user["id"], payload)
-    return JSONResponse(status_code=status.HTTP_201_CREATED, content=jsonable_encoder(rows))
+    data = bulk_create_shifts(payload)
+    return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(data))
 
-# ---------------- UPDATE (POST) ----------------
-# POST /schedule-doctors/update
-@router.post("/update", response_model=ShiftResponseModel)
-def update_shift_api(
-    payload: ShiftUpdateRequestModel,
-    current_user: dict = Depends(auth.get_current_doctor_user),
+# Bệnh nhân xem ngày trong tháng còn chỗ
+@router.get("/calendar", response_model=List[CalendarDayDTO])
+def api_calendar(
+    doctor_id: int, 
+    clinic_id: int, 
+    month: str,
+    current_user: AuthUser = Depends(patient_handler.get_current_patient_user),
 ):
-    row = update_shift_for_doctor(current_user["id"], payload)
-    return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(row))
+    data = get_calendar_days(doctor_id, clinic_id, month)
+    return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(data))
 
-# ---------------- DELETE ----------------
-# DELETE /schedule-doctors/{shift_id}
-@router.delete("/{shift_id}", status_code=status.HTTP_200_OK)
-def delete_shift_api(
-    shift_id: int,
-    current_user: dict = Depends(auth.get_current_doctor_user),
+# Bệnh nhân bấm vào 1 ngày -> lấy các CA (không còn slots)
+@router.get("/day-shifts", response_model=List[DayShiftDTO])
+def api_day_shifts(
+    doctor_id: int, 
+    clinic_id: int, 
+    work_date: str,
+    current_user: AuthUser = Depends(patient_handler.get_current_patient_user),
 ):
-    delete_shift_for_doctor(current_user["id"], shift_id)
-    return {"message": "Xóa ca làm việc thành công"}
-
-# ---------------- READ (GET) ----------------
-# GET /schedule-doctors/calendar/month?clinic_id=&year=&month=
-@router.get("/calendar/month", response_model=List[ShiftResponseModel])
-def calendar_month_api(
-    clinic_id: int = Query(...),
-    year: int = Query(...),
-    month: int = Query(..., ge=1, le=12),
-    current_user: dict = Depends(auth.get_current_doctor_user),
-):
-    rows = get_calendar_month_for_doctor(current_user["id"], clinic_id, year, month)
-    return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(rows))
-
-# GET /schedule-doctors/calendar/day?clinic_id=&work_date=YYYY-MM-DD
-@router.get("/calendar/day", response_model=List[ShiftResponseModel])
-def calendar_day_api(
-    clinic_id: int = Query(...),
-    work_date: date = Query(...),
-    current_user: dict = Depends(auth.get_current_doctor_user),
-):
-    rows = get_calendar_day_for_doctor(current_user["id"], clinic_id, work_date)
-    return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(rows))
+    data = get_day_shifts(doctor_id, clinic_id, work_date)
+    return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(data))

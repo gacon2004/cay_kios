@@ -4,8 +4,14 @@ from backend.services.models import ServiceCreateModel, ServiceUpdateModel
 
 db = DatabaseConnector()
 
-def get_all_services() -> list[dict]:
-    return db.query_get("SELECT * FROM services", ())
+def get_all_services(has_insurances: bool = False) -> list[dict]:
+    services = db.query_get("SELECT * FROM services", ())
+    
+    if has_insurances:
+        for s in services:
+            if s.get("price") is not None:
+                s["price"] = s["price"] / 2  
+    return services
 
 def get_service_by_id(service_id: int) -> dict:
     result = db.query_get("SELECT * FROM services WHERE id = %s", (service_id,))

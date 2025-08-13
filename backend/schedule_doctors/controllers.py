@@ -1,80 +1,141 @@
-# backend/schedule_doctors/controllers.py
-from __future__ import annotations
-from fastapi import HTTPException
-from typing import List
-import json
-from datetime import date
+import pymysql
+from datetime import datetime, timedelta, date
+from typing import List, Dict, Any
+from fastapi import HTTPException, status
 
 from backend.database.connector import DatabaseConnector
 from backend.schedule_doctors.models import (
     ShiftCreateRequestModel,
-    ShiftUpdateRequestModel,
-    MonthBulkCreateRequestModel,
+    MultiShiftBulkCreateRequestModel,
+    CalendarDayDTO,
+    DayShiftDTO,
 )
 
-database = DatabaseConnector()
+db = DatabaseConnector()
 
-# -------- helpers --------
-def _ensure_rows(rows: list[dict] | None, not_found_msg: str, code: int = 404) -> list[dict]:
+# ===== Tạo 1 ca, dùng execute_returning_id + query_one =====
+def create_shift(payload: ShiftCreateRequestModel) -> Dict[str, Any]:
+    try:
+        sched_id = db.execute_returning_id(
+            """
+            INSERT INTO doctor_schedules
+                (doctor_id, clinic_id, work_date, start_time, end_time,
+                 avg_minutes_per_patient, max_patients, status, note)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            """,
+            (
+                payload.doctor_id, payload.clinic_id, payload.work_date,
+                payload.start_time, payload.end_time,
+                payload.avg_minutes_per_patient, payload.max_patients,
+                payload.status, payload.note,
+            ),
+        )
+
+        # Trả về record, CAST TIME -> 'HH:MM:SS'
+        row = db.query_one(
+            """
+            SELECT id, doctor_id, clinic_id, work_date,
+                   CAST(start_time AS CHAR(8)) AS start_time,
+                   CAST(end_time   AS CHAR(8)) AS end_time,
+                   avg_minutes_per_patient, max_patients, booked_patients,
+                   status, note
+            FROM doctor_schedules
+            WHERE id=%s
+            """,
+            (sched_id,),
+        )
+        if not row:
+            raise HTTPException(500, "Không đọc được ca vừa tạo")
+        return row
+
+    except Exception as e:
+        # Bắt duplicate key (1062) -> 409
+        if isinstance(e, pymysql.err.IntegrityError) and getattr(e, "args", [None])[0] == 1062:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Ca đã tồn tại (trùng doctor_id/clinic_id/work_date/start_time)",
+            )
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, f"Database error: {e}")
+
+# ===== Bulk: tạo nhiều ca/ngày; bỏ qua trùng và thống kê =====
+def bulk_create_shifts(payload: MultiShiftBulkCreateRequestModel) -> Dict[str, int]:
+    if payload.start_date > payload.end_date:
+        raise HTTPException(400, "start_date phải <= end_date")
+
+    created = 0
+    skipped = 0
+    cur_date = payload.start_date
+    one_day = timedelta(days=1)
+
+    while cur_date <= payload.end_date:
+        if cur_date.weekday() in payload.weekdays:
+            for s in payload.shifts:
+                try:
+                    create_shift(ShiftCreateRequestModel(
+                        doctor_id=payload.doctor_id,
+                        clinic_id=payload.clinic_id,
+                        work_date=cur_date,
+                        start_time=s.start_time,
+                        end_time=s.end_time,
+                        avg_minutes_per_patient=s.avg_minutes_per_patient,
+                        max_patients=s.max_patients,
+                        status=s.status,
+                        note=s.note
+                    ))
+                    created += 1
+                except HTTPException as ex:
+                    if ex.status_code == 409:
+                        skipped += 1
+                    else:
+                        raise
+        cur_date += one_day
+
+    return {"created": created, "skipped_duplicates": skipped}
+
+# ===== Calendar: ngày trong tháng còn chỗ =====
+def get_calendar_days(doctor_id: int, clinic_id: int, month: str) -> List[CalendarDayDTO]:
+    try:
+        start = datetime.strptime(month + "-01", "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(400, "month phải dạng YYYY-MM")
+    end = (date(start.year + (start.month == 12), 1 if start.month == 12 else start.month + 1, 1)
+           - timedelta(days=1))
+
+    rows = db.query_get(
+        """
+        SELECT ds.work_date,
+               COUNT(ds.id) AS shifts_count,
+               SUM(ds.max_patients) AS total_capacity,
+               SUM(ds.booked_patients) AS total_booked,
+               SUM(GREATEST(ds.max_patients - ds.booked_patients, 0)) AS total_remaining
+        FROM doctor_schedules ds
+        WHERE ds.doctor_id=%s AND ds.clinic_id=%s
+          AND ds.work_date BETWEEN %s AND %s
+          AND ds.status=1
+        GROUP BY ds.work_date
+        HAVING total_remaining > 0
+        ORDER BY ds.work_date
+        """,
+        (doctor_id, clinic_id, start, end),
+    )
+    return [CalendarDayDTO(**r) for r in rows]
+
+# ===== Danh sách ca trong ngày (nếu rỗng -> 404) =====
+def get_day_shifts(doctor_id: int, clinic_id: int, work_date: date) -> List[DayShiftDTO]:
+    rows = db.query_get(
+        """
+        SELECT id AS schedule_id,
+               CAST(start_time AS CHAR(8)) AS start_time,
+               CAST(end_time   AS CHAR(8)) AS end_time,
+               avg_minutes_per_patient, max_patients, booked_patients,
+               (max_patients - booked_patients) AS remaining,
+               status, note
+        FROM doctor_schedules
+        WHERE doctor_id=%s AND clinic_id=%s AND work_date=%s AND status=1
+        ORDER BY start_time
+        """,
+        (doctor_id, clinic_id, work_date),
+    )
     if not rows:
-        raise HTTPException(status_code=code, detail=not_found_msg)
-    return rows
-
-def _build_update_json(payload: ShiftUpdateRequestModel) -> str:
-    data = {k: v for k, v in payload.dict().items() if k != "id" and v is not None}
-    if not data:
-        raise HTTPException(status_code=400, detail="Không có dữ liệu để cập nhật")
-    return json.dumps(data, default=str)
-
-# -------- use-cases --------
-def create_shift_for_doctor(doctor_id: int, payload: ShiftCreateRequestModel) -> dict:
-    rows = database.call_proc(
-        "sp_schedule_create_shift",
-        (
-            doctor_id,
-            payload.clinic_id,
-            payload.work_date,
-            payload.start_time,
-            payload.end_time,
-            payload.slot_minutes,
-            payload.capacity_per_slot,
-            payload.status,
-            payload.note,
-        ),
-    )
-    return _ensure_rows(rows, "Không tạo được ca làm việc", code=400)[0]
-
-def update_shift_for_doctor(doctor_id: int, payload: ShiftUpdateRequestModel) -> dict:
-    update_json = _build_update_json(payload)
-    rows = database.call_proc("sp_schedule_update_shift", (doctor_id, payload.id, update_json))
-    return _ensure_rows(rows, "Không tìm thấy ca hoặc không có quyền sửa")[0]
-
-def delete_shift_for_doctor(doctor_id: int, shift_id: int) -> None:
-    res = database.call_proc("sp_schedule_delete_shift", (doctor_id, shift_id))
-    if res and isinstance(res[0], dict) and "affected" in res[0] and int(res[0]["affected"]) == 0:
-        raise HTTPException(status_code=404, detail="Không tìm thấy ca hoặc không có quyền xóa")
-
-def bulk_create_month_for_doctor(doctor_id: int, payload: MonthBulkCreateRequestModel) -> List[dict]:
-    if not payload.days:
-        raise HTTPException(status_code=400, detail="Danh sách ngày trống")
-    if not payload.shift_templates:
-        raise HTTPException(status_code=400, detail="Danh sách mẫu ca trống")
-
-    rows = database.call_proc(
-        "sp_schedule_bulk_create_month",
-        (
-            doctor_id,
-            payload.clinic_id,
-            payload.year,
-            payload.month,
-            json.dumps(payload.days),
-            json.dumps([t.dict() for t in payload.shift_templates], default=str),
-        ),
-    )
-    return rows or []
-
-def get_calendar_month_for_doctor(doctor_id: int, clinic_id: int, year: int, month: int) -> List[dict]:
-    return database.call_proc("sp_schedule_get_month", (doctor_id, clinic_id, year, month))
-
-def get_calendar_day_for_doctor(doctor_id: int, clinic_id: int, day: date) -> List[dict]:
-    return database.call_proc("sp_schedule_get_day", (doctor_id, clinic_id, day))
+        raise HTTPException(404, "Không có ca làm việc cho bác sĩ/phòng khám vào ngày này")
+    return [DayShiftDTO(**r) for r in rows]

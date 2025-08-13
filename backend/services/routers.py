@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Query
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
-
+from typing import Annotated
 from backend.auth.providers.auth_providers import AuthProvider, AdminUser
 
 from backend.services.controllers import (
@@ -17,10 +17,11 @@ auth_handler= AuthProvider()
 router = APIRouter(prefix="/services", tags=["Services"])
 
 
-@router.get("/", response_model=list[ServiceResponseModel])
-def api_get_all_services():
-    return get_all_services()
-
+@router.get("/")
+def list_services(
+    has_insurances: Annotated[bool, Query(description="Có sử dụng bảo hiểm hay không")] = False
+):
+    return get_all_services(has_insurances)
 
 @router.get("/{service_id}", response_model=ServiceResponseModel)
 def api_get_service_by_id(service_id: int):

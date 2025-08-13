@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from backend.auth.providers.auth_providers import AuthProvider, AdminUser 
@@ -58,6 +58,7 @@ def remove_clinic(
     return JSONResponse(status_code=204, content={})
 
 
-@router.get("/by-service/{service_id}", response_model=list[ClinicOut])
-def clinics_by_service(service_id: int):
-    return get_clinics_by_service(service_id)
+@router.get("/by-service/{service_id}")
+def api_clinics_by_service(service_id: int):
+    data = get_clinics_by_service(service_id)
+    return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(data))

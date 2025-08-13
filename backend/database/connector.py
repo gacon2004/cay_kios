@@ -64,62 +64,25 @@ class DatabaseConnector:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Database error: " + str(e),
             )
-
-    def call_proc(self, proc_name: str, params: tuple = (), *, return_all: bool = False):
-        """
-        Gọi stored procedure và trả về list[dict].
-        - Mặc định trả về result set CUỐI CÙNG (phù hợp khi proc SELECT bản ghi cuối cùng).
-        - Nếu return_all=True -> trả về list các result set [[...], [...], ...].
-        """
-        conn = self.get_connection()
-        cursor = None
+        
+    def query_one(self, sql, param=()):
         try:
-            # Lấy dict cursor cho mọi driver
-            try:
-                # mysql-connector-python
-                cursor = conn.cursor(dictionary=True)
-            except TypeError:
-                # PyMySQL / MySQLdb
-                try:
-                    import pymysql
-                    cursor = conn.cursor(pymysql.cursors.DictCursor)
-                except Exception:
-                    from MySQLdb.cursors import DictCursor  # type: ignore
-                    cursor = conn.cursor(DictCursor)
-
-            # Gọi procedure
-            cursor.callproc(proc_name, params)
-
-            # Thu thập tất cả result sets (proc có thể trả nhiều SELECT)
-            all_sets = []
-            while True:
-                try:
-                    rows = cursor.fetchall()
-                    if rows is not None:
-                        all_sets.append(rows)
-                except Exception:
-                    pass
-                # nextset() -> False khi hết
-                if not hasattr(cursor, "nextset") or not cursor.nextset():
-                    break
-
-            conn.commit()  # QUAN TRỌNG: để dữ liệu thấy ngay
-
-            if return_all:
-                return all_sets
-            # Trả set cuối (thường là SELECT * ... ở cuối proc)
-            return all_sets[-1] if all_sets else []
-
+            connection = self.get_connection()
+            with connection:
+                with connection.cursor() as cursor:
+                    cursor.execute(sql, param)
+                    return cursor.fetchone()
         except Exception as e:
-            try: conn.rollback()
-            except Exception: pass
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Database error (proc {proc_name}): {e}",
-            )
-        finally:
-            try:
-                if cursor: cursor.close()
-            finally:
-                try: conn.close()
-                except Exception: pass
+            raise HTTPException(status_code=500, detail="Database error: " + str(e))
+
+    def execute_returning_id(self, sql, param=()):
+        try:
+            connection = self.get_connection()
+            with connection:
+                with connection.cursor() as cursor:
+                    cursor.execute(sql, param)
+                    last_id = cursor.lastrowid
+                    connection.commit()
+                    return last_id
+        except Exception as e:
+            raise HTTPException(status_code=500, detail="Database error: " + str(e))
