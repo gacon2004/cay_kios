@@ -23,14 +23,15 @@ def get_service_by_id(service_id: int) -> dict:
 def get_my_services_by_user(user_id: int) -> List[Dict[str, Any]]:
     """
     Trả về các dịch vụ (services) mà bác sĩ thuộc về,
-    dựa vào doctors.user_id -> clinic_doctor_assignments -> clinics -> services
+    map: doctors.user_id -> clinic_doctor_assignments -> clinics -> services.
+    Kết quả: id, name, description, price (khớp ServiceResponseModel).
     """
     sql = """
         SELECT DISTINCT
             s.id,
             s.name,
-            s.status,
-            s.description
+            s.description,
+            s.price
         FROM doctors d
         JOIN clinic_doctor_assignments cda ON cda.doctor_id = d.id
         JOIN clinics c ON c.id = cda.clinic_id

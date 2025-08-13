@@ -31,11 +31,6 @@ def api_get_service_by_id(service_id: int):
 
 @router.get("/doctor/me", response_model=List[ServiceResponseModel])
 def get_my_services(current_user = Depends(auth_handler.get_current_doctor_user)):
-    """
-    Trả về danh sách dịch vụ mà bác sĩ (ứng với user_id trong token) thuộc về.
-    Token CHẮC CHẮN có user_id.
-    """
-    # Cho phép provider trả về object hoặc dict
     if isinstance(current_user, dict):
         user_id = current_user.get("user_id", current_user.get("id"))
     else:

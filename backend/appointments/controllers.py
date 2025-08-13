@@ -1,6 +1,6 @@
 from fastapi import HTTPException, status
 from backend.database.connector import DatabaseConnector
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 from backend.appointments.models import (
     BookByShiftRequestModel,
     AppointmentFilterModel,
@@ -279,6 +279,35 @@ def get_my_appointments(patient_id: int, filters: AppointmentFilterModel):
     """
     params.extend([filters.limit, filters.offset])
     return db.query_get(sql, tuple(params))
+
+def get_my_appointments_of_doctor_user(user_id: int) -> List[Dict[str, Any]]:
+    """
+    Lấy lịch hẹn của bác sĩ dựa trên user_id trong token.
+    Map: users.id -> doctors.user_id -> appointments.doctor_id
+    """
+    sql = """
+        SELECT
+            a.id AS appointment_id,
+            a.patient_id,
+            p.full_name AS patient_name,
+            p.phone AS patient_phone,
+            a.clinic_id,
+            c.name AS clinic_name,
+            a.schedule_id,
+            ds.work_date,
+            TIME_FORMAT(ds.start_time, '%%H:%%i') AS start_time,
+            TIME_FORMAT(ds.end_time,   '%%H:%%i') AS end_time,
+            a.status AS appointment_status,
+            a.created_at
+        FROM appointments a
+        JOIN doctors d            ON d.id = a.doctor_id
+        LEFT JOIN doctor_schedules ds ON ds.id = a.schedule_id
+        JOIN patients p           ON p.id = a.patient_id
+        JOIN clinics c            ON c.id = a.clinic_id
+        WHERE d.user_id = %s
+        ORDER BY a.created_at DESC
+    """
+    return db.query_get(sql, (user_id,))
 
 # ================= CANCEL BY PATIENT =================
 def cancel_my_appointment(appointment_id: int, patient_id: int) -> dict:
