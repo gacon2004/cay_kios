@@ -17,3 +17,9 @@ class ServiceResponseModel(BaseModel):
     name: str
     description: Optional[str] = None
     price: int
+
+class ServiceDoctorResponseModel(BaseModel):
+    id: int
+    name: str
+    status: Optional[str] = None
+    description: Optional[str] = None

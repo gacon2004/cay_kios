@@ -45,8 +45,7 @@ def api_bulk_create_shifts(
 def api_calendar(
     doctor_id: int, 
     clinic_id: int, 
-    month: str,
-    current_user: AuthUser = Depends(patient_handler.get_current_patient_user),
+    month: str
 ):
     data = get_calendar_days(doctor_id, clinic_id, month)
     return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(data))
@@ -57,7 +56,6 @@ def api_day_shifts(
     doctor_id: int, 
     clinic_id: int, 
     work_date: str,
-    current_user: AuthUser = Depends(patient_handler.get_current_patient_user),
 ):
     data = get_day_shifts(doctor_id, clinic_id, work_date)
     return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(data))

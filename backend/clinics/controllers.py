@@ -9,12 +9,24 @@ def get_all_clinics() -> list[dict]:
 
     return db.query_get("SELECT * FROM clinics", ())
 
-
 def get_clinic_by_id(clinic_id: int) -> dict:
     result = db.query_get("SELECT * FROM clinics WHERE id = %s", (clinic_id,))
     if not result:
         raise HTTPException(status_code=404, detail="Không tìm thấy phòng khám")
     return result[0]
+
+def get_my_clinics_by_user(user_id: int) -> List[Dict[str, Any]]:
+    sql = """
+        SELECT DISTINCT
+            c.id, c.name, c.location, c.status
+        FROM doctors d
+        JOIN clinic_doctor_assignments cda ON cda.doctor_id = d.id
+        JOIN clinics c ON c.id = cda.clinic_id
+        WHERE d.user_id = %s
+        ORDER BY c.id
+    """
+    rows = db.query_get(sql, (user_id,))
+    return rows
 
 def create_clinic(data: ClinicCreateModel) -> dict:
     db.query_put(
