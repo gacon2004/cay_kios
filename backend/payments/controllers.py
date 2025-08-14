@@ -13,7 +13,7 @@ db = DatabaseConnector()
 
 def _gen_order_code(appointment_id: int) -> str:
     # ví dụ: APPT-123-250812-AB12
-    return f"APPT-{appointment_id}-{time.strftime('%y%m%d')}-{secrets.token_hex(2).upper()}"
+    return f"APPT{appointment_id}{time.strftime('%y%m%d')}{secrets.token_hex(2).upper()}"
 
 async def create_payment_order(appointment_id: int, ttl_seconds: Optional[int]) -> Dict[str, Any]:
     """
@@ -56,35 +56,20 @@ async def create_payment_order(appointment_id: int, ttl_seconds: Optional[int]) 
     except Exception as e:
         raise HTTPException(500, f"DB error: {e}")
 
-    # 4) Gọi SePay tạo VA/QR
-    if not (SEPAY_BASE and SEPAY_BANK_ACCOUNT_ID and SEPAY_TOKEN):
-        raise HTTPException(500, "Missing SePay configs in environment variables")
 
-    url = f"{SEPAY_BASE}/{SEPAY_BANK_ACCOUNT_ID}/orders"
-    body = {"amount": amount, "order_code": order_code, "with_qrcode": True}
-    if ttl_seconds:
-        body["duration"] = ttl_seconds
-    headers = {"Authorization": f"Bearer {SEPAY_TOKEN}", "Content-Type": "application/json"}
+    acc = "0385499179"
+    bank = "MBBank"
+    va = "VQRQADTPO6639"
 
-    async with httpx.AsyncClient(timeout=10) as c:
-        r = await c.post(url, json=body, headers=headers)
+    qr_code_url = f"https://qr.sepay.vn/img?acc={acc}&bank={bank}&amount={amount}&des={order_code}"
 
-    if r.status_code != 200:
-        # rollback logic nhẹ: hủy đơn vừa tạo
-        db.query_put("UPDATE payment_orders SET status='CANCELLED' WHERE id=%s", (po_id,))
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"SePay error: {r.text}")
-
-    data = r.json().get("data", {})
-    va = data.get("va_number")
-    qr = data.get("qr_code_url")
-    oid = data.get("order_id")
 
     # 5) Cập nhật đơn sang AWAITING + lưu VA/QR
     db.query_put("""
         UPDATE payment_orders
         SET status='AWAITING', sepay_order_id=%s, va_number=%s, qr_code_url=%s
         WHERE id=%s
-    """, (oid, va, qr, po_id))
+    """, (appointment_id, va, qr_code_url, po_id))
 
     return {
         "payment_order_id": po_id,
@@ -92,7 +77,7 @@ async def create_payment_order(appointment_id: int, ttl_seconds: Optional[int]) 
         "amount_vnd": amount,
         "status": "AWAITING",
         "va_number": va,
-        "qr_code_url": qr,
+        "qr_code_url": qr_code_url,
     }
 
 def get_payment_order_by_code(order_code: str) -> Optional[Dict[str, Any]]:
