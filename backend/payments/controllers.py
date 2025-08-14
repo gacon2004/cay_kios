@@ -91,11 +91,11 @@ def get_payment_order_by_code(order_code: str) -> Optional[Dict[str, Any]]:
 def _json_dumps(obj) -> str:
     return json.dumps(obj, ensure_ascii=False, separators=(",", ":"))
 
-def verify_webhook_auth(authorapikey: Optional[str]):
-    print(f"Authorization header received: '{authorapikey}'") # Thêm dòng này vào
-    if not authorapikey or not authorapikey.lower().startswith("apikey "):
+def verify_webhook_auth(Authorization: Optional[str]):
+    print(f"Authorization header received: '{Authorization}'") # Thêm dòng này vào
+    if not Authorization or not Authorization.lower().startswith("apikey "):
         raise HTTPException(401, "Missing Apikey")
-    key = authorapikey.split(" ", 1)[1]
+    key = Authorization.split(" ", 1)[1]
     if key != SEPAY_WEBHOOK_SECRET:
         raise HTTPException(401, "Invalid Apikey")
 
