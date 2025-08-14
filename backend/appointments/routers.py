@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status, Query, Path, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from typing import Annotated
-from backend.auth.providers.auth_providers import AuthProvider, DoctorUser
+from backend.auth.providers.auth_providers import AuthProvider
 from backend.auth.providers.partient_provider import PatientProvider
 from backend.appointments.models import (
     BookByShiftRequestModel, 
@@ -23,7 +23,7 @@ auth_handler = AuthProvider()
 patient_handler = PatientProvider()
 
 # ONLINE (bệnh nhân thao tác)
-@router.post("/online/book-by-shift", response_model=AppointmentResponseModel)
+@router.post("/book-online", response_model=AppointmentResponseModel)
 def api_book_by_shift_online(
     data: BookByShiftRequestModel,
     has_insurances: bool = Query(False, description="BHYT: true/false"),
@@ -33,7 +33,7 @@ def api_book_by_shift_online(
     return JSONResponse(status_code=status.HTTP_201_CREATED, content=jsonable_encoder(detail))
 
 # OFFLINE (bệnh nhân vẫn thao tác, ví dụ kiosk), khác mỗi channel để phân tích báo cáo
-@router.post("/offline/book-by-shift", response_model=AppointmentResponseModel)
+@router.post("/book-offline", response_model=AppointmentResponseModel)
 def api_book_by_shift_offline(
     data: BookByShiftRequestModel,
     has_insurances: bool = Query(False, description="BHYT: true/false"),
