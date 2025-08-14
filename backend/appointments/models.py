@@ -28,8 +28,7 @@ class AppointmentResponseModel(BaseModel):
     doctor_name: str
     clinic_name: str
     cur_price: float
-    qr_code: Optional[str] = None
-
+    
 # --- MODEL MỚI: response hủy lịch ---
 class AppointmentCancelResponse(BaseModel):
     pass
