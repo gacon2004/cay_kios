@@ -68,8 +68,32 @@ class MultiShiftBulkCreateRequestModel(BaseModel):
         return v
 
 
+# ---- UPDATE THEO schedule_id ----
+class ShiftEditItem(BaseModel):
+    schedule_id: int
+    start_time: Optional[time] = None
+    end_time: Optional[time] = None
+    avg_minutes_per_patient: Optional[Annotated[int, Field(ge=5, le=120)]] = None
+    max_patients: Optional[Annotated[int, Field(ge=1, le=200)]] = None
+    status: Optional[int] = None
+    note: Optional[str] = None
+
+    @field_validator("end_time")
+    @classmethod
+    def _end_after_start(cls, v: Optional[time], info):
+        st = info.data.get("start_time")
+        if v is not None and st is not None and v <= st:
+            raise ValueError("end_time phải lớn hơn start_time")
+        return v
+
+
+class DayUpsertRequest(BaseModel):
+    clinic_id: int
+    work_date: date
+    # dùng ShiftEditItem để UPDATE theo schedule_id
+    shifts: List[ShiftEditItem] = Field(..., min_items=1)
+
 # ====== RESPONSE ======
-# Dùng string để đảm bảo JSON luôn "HH:MM:SS" (tránh timedelta -> 28800.0)
 
 TimeStr = Annotated[str, Field(pattern=r"^\d{2}:\d{2}:\d{2}$")]
 
