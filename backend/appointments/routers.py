@@ -8,6 +8,7 @@ from backend.appointments.models import (
     BookByShiftRequestModel, 
     AppointmentResponseModel,
     AppointmentFilterModel,
+    AppointmentStatusUpdateModel,
     AppointmentCancelResponse,
 )
 from backend.appointments.controllers import (
@@ -15,6 +16,7 @@ from backend.appointments.controllers import (
     book_by_shift_offline,
     get_my_appointments,
     cancel_my_appointment,
+    update_appointment_status_by_doctor,
     get_my_appointments_of_doctor_user,
 )
 
@@ -59,6 +61,21 @@ def api_get_my_appointments_for_doctor(
 
     data = get_my_appointments_of_doctor_user(int(user_id))
     return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(data))
+
+@router.put("/doctor/{appointment_id}/status")
+def api_update_status_by_doctor(
+    appointment_id: int = Path(..., ge=1),
+    payload: AppointmentStatusUpdateModel = ...,
+    current_user = Depends(auth_handler.get_current_doctor_user),
+):
+    # lấy user_id từ token
+    user_id = current_user.get("user_id", current_user.get("id")) if isinstance(current_user, dict) \
+              else getattr(current_user, "user_id", getattr(current_user, "id", None))
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Token thiếu user_id")
+
+    res = update_appointment_status_by_doctor(int(user_id), appointment_id, payload.status)
+    return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(res))
 
 @router.post("/{appointment_id}/cancel", response_model=AppointmentCancelResponse)
 def api_cancel_my_appointment(

@@ -286,6 +286,71 @@ def get_my_appointments_of_doctor_user(user_id: int) -> List[Dict[str, Any]]:
     """
     return db.query_get(sql, (user_id,))
 
+def update_appointment_status_by_doctor(user_id: int, appointment_id: int, new_status: int) -> dict:
+    # Lấy doctor_id từ user_id
+    doc = db.query_one("SELECT id FROM doctors WHERE user_id=%s", (user_id,))
+    if not doc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Không tìm thấy bác sĩ ứng với user")
+    doctor_id = int(doc["id"])
+
+    conn = db.get_connection()
+    try:
+        with conn:
+            cur = conn.cursor()
+
+            # Lock lịch hẹn
+            cur.execute("""
+                SELECT id, doctor_id, schedule_id, status
+                FROM appointments
+                WHERE id=%s
+                FOR UPDATE
+            """, (appointment_id,))
+            appt = cur.fetchone()
+            if not appt:
+                raise HTTPException(status.HTTP_404_NOT_FOUND, "Không tìm thấy lịch hẹn")
+
+            if int(appt["doctor_id"]) != doctor_id:
+                raise HTTPException(status.HTTP_403_FORBIDDEN, "Bạn không có quyền sửa lịch hẹn này")
+
+            old_status = int(appt["status"])
+
+            allowed = {1, 2, 3, 4}  # 1=confirmed, 2=completed, 3=no_show, 4=canceled
+            if new_status not in allowed:
+                raise HTTPException(status.HTTP_400_BAD_REQUEST, "Trạng thái không hợp lệ")
+
+            if new_status == old_status:
+                return {"message": "Không có thay đổi", "old_status": old_status, "new_status": new_status}
+
+            # Cập nhật trạng thái
+            cur.execute("""
+                UPDATE appointments
+                SET status=%s, updated_at=NOW()
+                WHERE id=%s
+            """, (new_status, appointment_id))
+
+            # Nếu hủy -> trả slot
+            if new_status == 4 and appt["schedule_id"]:
+                cur.execute("""
+                    UPDATE doctor_schedules
+                    SET booked_patients = GREATEST(booked_patients - 1, 0)
+                    WHERE id=%s
+                """, (appt["schedule_id"],))
+
+            conn.commit()
+            return {
+                "message": "Cập nhật trạng thái thành công",
+                "old_status": old_status,
+                "new_status": new_status
+            }
+
+    except HTTPException:
+        try: conn.rollback()
+        except: pass
+        raise
+    except Exception as e:
+        try: conn.rollback()
+        except: pass
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Lỗi cơ sở dữ liệu: {e}")
 
 def cancel_my_appointment(appointment_id: int, patient_id: int) -> dict:
     conn = db.get_connection()

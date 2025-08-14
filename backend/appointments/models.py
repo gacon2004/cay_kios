@@ -28,6 +28,9 @@ class AppointmentResponseModel(BaseModel):
     doctor_name: str
     clinic_name: str
     cur_price: float
+
+class AppointmentStatusUpdateModel(BaseModel):
+    status: int = Field(..., description="Trạng thái mới: 1=confirmed, 2=completed, 3=no_show, 4=canceled")
     
 # --- MODEL MỚI: response hủy lịch ---
 class AppointmentCancelResponse(BaseModel):
