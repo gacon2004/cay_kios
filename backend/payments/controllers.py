@@ -124,28 +124,28 @@ def handle_sepay_webhook(payload: Dict[str, Any]) -> Dict[str, Any]:
     # 1) Idempotent
     existed = db.query_get("SELECT id FROM payment_events WHERE sepay_tx_id=%s", (tx_id,))
     if existed:
-        return {"success": True}
+        return {"success": "da thanh toan"}
 
-
+    code = payload.get("code")           # với VA theo đơn hàng = order_code
     amount = int(payload.get("transferAmount") or 0)
     ttype  = payload.get("transferType") # 'in'/'out'
     content = payload.get("content")
     ref = payload.get("referenceCode")
-    code = extract_order_code_from_content(content)
+    order_code = extract_order_code_from_content(content)
 
     # 2) Lưu event trước (audit)
     db.query_put("""
         INSERT INTO payment_events (payment_order_id, sepay_tx_id, code, reference_code,
                 transfer_amount, transfer_type, content, raw_payload)
         VALUES (Null, %s, %s, %s, %s, %s, %s, CAST(%s AS JSON))
-    """, (tx_id, code, ref, amount, ttype, content, _json_dumps(payload)))
+    """, (tx_id, order_code, ref, amount, ttype, content, _json_dumps(payload)))
 
     # 3) Map về payment_orders và cập nhật trạng thái
-    if code and ttype == "in":
+    if ttype == "in":
         # Lock nhẹ bằng update có điều kiện trạng thái
         rows = db.query_get("""
             SELECT id, amount_vnd, status FROM payment_orders WHERE order_code=%s
-        """, (code,))
+        """, (order_code,))
         if rows:
             po = rows[0]
             if po["status"] in ("PENDING", "AWAITING"):
@@ -157,5 +157,7 @@ def handle_sepay_webhook(payload: Dict[str, Any]) -> Dict[str, Any]:
                     """, (po["id"],))
                 elif 0 < amount < po["amount_vnd"]:
                     db.query_put("UPDATE payment_orders SET status='PARTIALLY' WHERE id=%s", (po["id"],))
+    else:
+        return {"success": "khong co code"}
 
     return {"success": True}

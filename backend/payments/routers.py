@@ -23,6 +23,6 @@ async def get_order(order_code: str):
 # Webhook từ SePay (money-in)
 @router.post("/webhooks/sepay")
 async def sepay_webhook(request: Request, authorapikey: str = Header(None)):
-    
+    verify_webhook_auth(authorapikey)
     payload = await request.json()
     return handle_sepay_webhook(payload)
