@@ -2,6 +2,7 @@ import os, time, secrets, json, httpx
 from typing import Optional, Dict, Any
 from fastapi import HTTPException, status
 from backend.database.connector import DatabaseConnector
+import re
 
 # ENV
 SEPAY_BASE = os.getenv("SEPAY_BASE")
@@ -98,6 +99,20 @@ def verify_webhook_auth(authorapikey: Optional[str]):
     if key != SEPAY_WEBHOOK_SECRET:
         raise HTTPException(401, "Invalid Apikey")
 
+
+def extract_order_code_from_content(content: str) -> Optional[str]:
+    """
+    Trích xuất mã đơn hàng (có dạng 'APPT...') từ chuỗi nội dung.
+    """
+    if not content:
+        return None
+    # Regex tìm chuỗi bắt đầu bằng 'APPT' và theo sau là chữ cái hoặc số
+    pattern = r"APPT[A-Z0-9]+"
+    match = re.search(pattern, content)
+    if match:
+        return match.group(0)
+    return None
+
 def handle_sepay_webhook(payload: Dict[str, Any]) -> Dict[str, Any]:
     """
     Xử lý webhook biến động/VA: idempotent + map về payment_orders bằng code.
@@ -111,17 +126,18 @@ def handle_sepay_webhook(payload: Dict[str, Any]) -> Dict[str, Any]:
     if existed:
         return {"success": True}
 
-    code = payload.get("code")           # với VA theo đơn hàng = order_code
+
     amount = int(payload.get("transferAmount") or 0)
     ttype  = payload.get("transferType") # 'in'/'out'
     content = payload.get("content")
     ref = payload.get("referenceCode")
+    code = extract_order_code_from_content(content)
 
     # 2) Lưu event trước (audit)
     db.query_put("""
         INSERT INTO payment_events (payment_order_id, sepay_tx_id, code, reference_code,
                 transfer_amount, transfer_type, content, raw_payload)
-        VALUES (NULL, %s, %s, %s, %s, %s, %s, CAST(%s AS JSON))
+        VALUES (Null, %s, %s, %s, %s, %s, %s, CAST(%s AS JSON))
     """, (tx_id, code, ref, amount, ttype, content, _json_dumps(payload)))
 
     # 3) Map về payment_orders và cập nhật trạng thái
