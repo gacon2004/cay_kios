@@ -74,6 +74,8 @@ async def create_payment_order(appointment_id: int, ttl_seconds: Optional[int]) 
 
     return {
         "payment_order_id": po_id,
+        "Stk": acc,
+        "bank": bank,
         "order_code": order_code,
         "amount_vnd": amount,
         "status": "AWAITING",
