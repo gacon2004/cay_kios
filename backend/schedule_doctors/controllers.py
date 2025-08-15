@@ -3,7 +3,7 @@ import pymysql
 from collections import defaultdict
 from datetime import datetime, timedelta, date
 from typing import List, Dict, Any, Set
-
+from datetime import datetime, timedelta, date, time, timezone
 from fastapi import HTTPException, status
 
 from backend.database.connector import DatabaseConnector
@@ -18,6 +18,7 @@ from backend.schedule_doctors.models import (
 
 db = DatabaseConnector()
 
+VN_TZ = timezone(timedelta(hours=7))
 # ============================================================
 # Helpers
 # ============================================================
@@ -226,12 +227,21 @@ def bulk_create_shifts(payload: MultiShiftBulkCreateRequestModel) -> Dict[str, i
 # ============================================================
 
 def get_calendar_days(doctor_id: int, clinic_id: int, month: str) -> List[CalendarDayDTO]:
+    """
+    Trả về các ngày trong tháng có ca và còn chỗ (status=1),
+    chỉ tính từ HÔM NAY trở đi theo múi giờ VN (+7).
+    """
     try:
         start = datetime.strptime(month + "-01", "%Y-%m-%d").date()
     except ValueError:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "month phải dạng YYYY-MM")
-    end = (date(start.year + (start.month == 12), 1 if start.month == 12 else start.month + 1, 1)
-           - timedelta(days=1))
+
+    # ngày cuối tháng
+    end = (date(start.year + (start.month == 12),
+                1 if start.month == 12 else start.month + 1, 1) - timedelta(days=1))
+
+    # Ngày hiện tại theo VN
+    vn_today = datetime.now(VN_TZ).date()
 
     rows = db.query_get(
         """
@@ -241,34 +251,86 @@ def get_calendar_days(doctor_id: int, clinic_id: int, month: str) -> List[Calend
                SUM(ds.booked_patients) AS total_booked,
                SUM(GREATEST(ds.max_patients - ds.booked_patients, 0)) AS total_remaining
         FROM doctor_schedules ds
-        WHERE ds.doctor_id=%s AND ds.clinic_id=%s
+        WHERE ds.doctor_id = %s
+          AND ds.clinic_id = %s
           AND ds.work_date BETWEEN %s AND %s
-          AND ds.status=1
+          AND ds.work_date >= %s           -- loại các ngày đã qua theo VN
+          AND ds.status = 1
         GROUP BY ds.work_date
         HAVING total_remaining > 0
         ORDER BY ds.work_date
         """,
-        (doctor_id, clinic_id, start, end),
+        (doctor_id, clinic_id, start, end, vn_today),
     )
     return [CalendarDayDTO(**r) for r in rows]
 
+
 def get_day_shifts(doctor_id: int, clinic_id: int, work_date: date) -> List[DayShiftDTO]:
-    rows = db.query_get(
-        """
-        SELECT id AS schedule_id,
-               CAST(start_time AS CHAR(8)) AS start_time,
-               CAST(end_time   AS CHAR(8)) AS end_time,
-               avg_minutes_per_patient, max_patients, booked_patients,
-               (max_patients - booked_patients) AS remaining,
-               status, note
-        FROM doctor_schedules
-        WHERE doctor_id=%s AND clinic_id=%s AND work_date=%s AND status=1
-        ORDER BY start_time
-        """,
-        (doctor_id, clinic_id, work_date),
-    )
+    """
+    Trả về danh sách ca của 1 ngày theo múi giờ VN:
+    - Nếu work_date là str -> ép kiểu 'YYYY-MM-DD'
+    - Nếu work_date < hôm nay (VN) -> 404
+    - Nếu work_date = hôm nay (VN) -> chỉ trả ca chưa kết thúc (end_time > VN now)
+    - Nếu work_date > hôm nay (VN) -> trả toàn bộ ca status=1
+    """
+    # Ép kiểu khi router truyền chuỗi
+    if isinstance(work_date, str):
+        try:
+            work_date = datetime.strptime(work_date, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "work_date phải dạng YYYY-MM-DD")
+
+    vn_now = datetime.now(VN_TZ)
+    vn_today = vn_now.date()
+    vn_time_now: time = vn_now.time()
+
+    # Ngày đã qua theo VN
+    if work_date < vn_today:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Không có ca khả dụng cho ngày này")
+
+    # Hôm nay -> lọc ca chưa kết thúc
+    if work_date == vn_today:
+        rows = db.query_get(
+            """
+            SELECT id AS schedule_id,
+                   CAST(start_time AS CHAR(8)) AS start_time,
+                   CAST(end_time   AS CHAR(8)) AS end_time,
+                   avg_minutes_per_patient, max_patients, booked_patients,
+                   (max_patients - booked_patients) AS remaining,
+                   status, note
+            FROM doctor_schedules
+            WHERE doctor_id = %s
+              AND clinic_id = %s
+              AND work_date = %s
+              AND status = 1
+              AND end_time > %s
+            ORDER BY start_time
+            """,
+            (doctor_id, clinic_id, work_date, vn_time_now),
+        )
+    else:
+        # Ngày tương lai -> không cần lọc theo giờ
+        rows = db.query_get(
+            """
+            SELECT id AS schedule_id,
+                   CAST(start_time AS CHAR(8)) AS start_time,
+                   CAST(end_time   AS CHAR(8)) AS end_time,
+                   avg_minutes_per_patient, max_patients, booked_patients,
+                   (max_patients - booked_patients) AS remaining,
+                   status, note
+            FROM doctor_schedules
+            WHERE doctor_id = %s
+              AND clinic_id = %s
+              AND work_date = %s
+              AND status = 1
+            ORDER BY start_time
+            """,
+            (doctor_id, clinic_id, work_date),
+        )
+
     if not rows:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Không có ca làm việc cho bác sĩ/phòng khám vào ngày này")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Không có ca khả dụng cho ngày này")
+
     return [DayShiftDTO(**r) for r in rows]
 
 # ============================================================
