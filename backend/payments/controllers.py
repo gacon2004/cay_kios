@@ -85,7 +85,7 @@ async def create_payment_order(appointment_id: int, ttl_seconds: Optional[int]) 
 
 def get_payment_order_by_code(order_code: str) -> Optional[Dict[str, Any]]:
     rows = db.query_get("""
-        SELECT id, order_code, amount_vnd, status, va_number, qr_code_url
+        SELECT id, order_code, amount_vnd, status, paid_at, va_number, qr_code_url
         FROM payment_orders WHERE order_code=%s
     """, (order_code,))
     return rows[0] if rows else None
