@@ -137,9 +137,9 @@ def handle_sepay_webhook(payload: Dict[str, Any]) -> Dict[str, Any]:
 
     # 2) Lưu event trước (audit)
     db.query_put("""
-        INSERT INTO payment_events (payment_order_id, sepay_tx_id, code, reference_code,
+        INSERT INTO payment_events (sepay_tx_id, code, reference_code,
                 transfer_amount, transfer_type, content, raw_payload)
-        VALUES (Null, %s, %s, %s, %s, %s, %s, CAST(%s AS JSON))
+        VALUES (%s, %s, %s, %s, %s, %s, CAST(%s AS JSON))
     """, (tx_id, order_code, ref, amount, ttype, content, _json_dumps(payload)))
 
     # 3) Map về payment_orders và cập nhật trạng thái
