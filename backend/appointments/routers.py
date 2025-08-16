@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, status, Query, Path, HTTPException
+from fastapi import APIRouter, Depends, status, Query, Path, HTTPException, Response
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
-from typing import Annotated
+from typing import Annotated, List
 from backend.auth.providers.auth_providers import AuthProvider
 from backend.auth.providers.partient_provider import PatientProvider
 from backend.appointments.models import (
@@ -10,6 +10,8 @@ from backend.appointments.models import (
     AppointmentFilterModel,
     AppointmentStatusUpdateModel,
     AppointmentCancelResponse,
+    AppointmentPatientItem,
+    AppointmentPaymentFilterModel
 )
 from backend.appointments.controllers import (
     book_by_shift_online,
@@ -18,6 +20,8 @@ from backend.appointments.controllers import (
     cancel_my_appointment,
     update_appointment_status_by_doctor,
     get_my_appointments_of_doctor_user,
+    list_patient_appointments_by_payment,
+    generate_visit_ticket_pdf,
 )
 
 router = APIRouter(prefix="/appointments", tags=["Appointments"])
@@ -49,6 +53,14 @@ def api_get_my_appointments(
 ):
     items = get_my_appointments(current_user["id"], filters)
     return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(items))
+
+@router.get("/patient/payment/me", response_model=List[AppointmentPatientItem])
+def api_patient_my_appointments_payment(
+    filters: AppointmentPaymentFilterModel = Depends(),
+    current_user: Annotated[dict, Depends(patient_handler.get_current_patient_user)] = None,
+):
+    data = list_patient_appointments_by_payment(current_user["id"], filters)
+    return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(data))
 
 @router.get("/doctor/me")
 def api_get_my_appointments_for_doctor(
@@ -84,3 +96,16 @@ def api_cancel_my_appointment(
 ):
     res = cancel_my_appointment(appointment_id, current_user["id"])
     return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(res))
+
+
+@router.get("/{appointment_id}/print-ticket", response_class=Response)
+def api_print_ticket_pdf(
+    appointment_id: int,
+    current_user = Depends(patient_handler.get_current_patient_user),
+):
+    pdf_bytes, filename = generate_visit_ticket_pdf(appointment_id, current_user["id"])
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{filename}"'}
+    )
