@@ -25,7 +25,7 @@ export default function MainLayout() {
             color: 'bg-green-500',
             action: () =>
                 toast({
-                    title: '🚧 Tính năng này chưa được triển khai—nhưng đừng lo! Bạn có thể yêu cầu nó trong lời nhắc tiếp theo! 🚀',
+                    title: '🚧 Tính năng này chưa được triển khai',
                 }),
         },
         {
@@ -36,7 +36,7 @@ export default function MainLayout() {
             color: 'bg-purple-500',
             action: () =>
                 toast({
-                    title: '🚧 Tính năng này chưa được triển khai—nhưng đừng lo! Bạn có thể yêu cầu nó trong lời nhắc tiếp theo! 🚀',
+                    title: '🚧 Tính năng này chưa được triển khai',
                 }),
         },
         {
@@ -45,10 +45,7 @@ export default function MainLayout() {
             subtitle: 'Xem kết quả khám bệnh',
             icon: FileText,
             color: 'bg-orange-500',
-            action: () =>
-                toast({
-                    title: '🚧 Tính năng này chưa được triển khai—nhưng đừng lo! Bạn có thể yêu cầu nó trong lời nhắc tiếp theo! 🚀',
-                }),
+            action: () => router.push('/checkAppointments'),
         },
     ];
 
