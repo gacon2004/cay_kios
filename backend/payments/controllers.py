@@ -5,7 +5,6 @@ from backend.database.connector import DatabaseConnector
 import re
 
 # ENV
-SEPAY_BASE = os.getenv("SEPAY_BASE")
 SEPAY_BANK_ACCOUNT_ID = os.getenv("SEPAY_BANK_ACCOUNT_ID")
 SEPAY_TOKEN = os.getenv("SEPAY_TOKEN")
 SEPAY_WEBHOOK_SECRET = os.getenv("SEPAY_WEBHOOK_SECRET")
@@ -57,12 +56,19 @@ async def create_payment_order(appointment_id: int, ttl_seconds: Optional[int]) 
     except Exception as e:
         raise HTTPException(500, f"DB error: {e}")
 
+    bank_if = db.query_get("""
+        SELECT a.account_number, a.bank_name, a.va
+        FROM bank_information a
+    """, ())
+    if not bank_if:
+        raise HTTPException(404, "bank information not found")
+    bank_if = bank_if[0]
 
-    acc = "0385499179"
-    bank = "MBBank"
-    va = "VQRQADTPO6639"
+    account_number = bank_if["account_number"]
+    bank_name = bank_if["bank_name"]
+    va = bank_if["va"]
 
-    qr_code_url = f"https://qr.sepay.vn/img?acc={acc}&bank={bank}&amount={amount}&des={order_code}"
+    qr_code_url = f"https://qr.sepay.vn/img?acc={account_number}&bank={bank_name}&amount={amount}&des={order_code}"
 
 
     # 5) Cập nhật đơn sang AWAITING + lưu VA/QR

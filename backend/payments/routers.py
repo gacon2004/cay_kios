@@ -26,3 +26,9 @@ async def sepay_webhook(request: Request, Authorization: str = Header(None)):
     verify_webhook_auth(Authorization)
     payload = await request.json()
     return handle_sepay_webhook(payload)
+
+@router.put("/bank_information")
+async def sepay_webhook(request: Request, Authorization: str = Header(None)):
+    verify_webhook_auth(Authorization)
+    payload = await request.json()
+    return handle_sepay_webhook(payload)
