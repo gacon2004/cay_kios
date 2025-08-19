@@ -1,6 +1,5 @@
 export interface User {
   id: string;
-  email: string;
   name: string;
   role: string;
 }
@@ -16,15 +15,18 @@ export interface Doctor {
 }
 
 export interface Patient {
-  id: string;
-  name: string;
-  email?: string;
+  id: number;
+  national_id: string;
+  full_name: string;
+  date_of_birth: string;
+  gender: string;
   phone: string;
-  cccd: string;
-  dateOfBirth: string;
-  gender: "male" | "female" | "other";
-  address: string;
-  createdAt: string;
+  ward: string;
+  district: string;
+  province: string;
+  occupation: string;
+  ethnicity: string;
+  created_at: string;
 }
 
 export interface Service {
@@ -38,12 +40,11 @@ export interface Service {
 }
 
 export interface Room {
-  id: string;
+  id: number;
   name: string;
-  type: string;
-  status: "available" | "occupied" | "maintenance";
-  equipment: string[];
-  createdAt: string;
+  service_id: number;
+  location: string;
+  status: "Còn trống" | "Đã đầy" | "Bảo trì";
 }
 
 export interface Appointment {

@@ -27,7 +27,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    set({ user: null, token: null, isAuthenticated: false, isLoading: false });
+    set({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      isLoading: false,
+    });
   },
 
   setLoading: (loading: boolean) => {
@@ -42,7 +47,12 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (token && userStr) {
         try {
           const user = JSON.parse(userStr);
-          set({ user, token, isAuthenticated: true, isLoading: false });
+          set({
+            user,
+            token,
+            isAuthenticated: true,
+            isLoading: false,
+          });
         } catch {
           localStorage.removeItem("token");
           localStorage.removeItem("user");
