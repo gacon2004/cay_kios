@@ -11,7 +11,8 @@ from backend.appointments.models import (
     AppointmentStatusUpdateModel,
     AppointmentCancelResponse,
     AppointmentPatientItem,
-    AppointmentPaymentFilterModel
+    AppointmentPaymentFilterModel,
+    AppointmentAdminPaymentItem,
 )
 from backend.appointments.controllers import (
     book_by_shift_online,
@@ -22,6 +23,7 @@ from backend.appointments.controllers import (
     get_my_appointments_of_doctor_user,
     list_patient_appointments_by_payment,
     generate_visit_ticket_pdf,
+    list_all_appointments_by_payment_admin,
 )
 
 router = APIRouter(prefix="/appointments", tags=["Appointments"])
@@ -88,6 +90,14 @@ def api_update_status_by_doctor(
 
     res = update_appointment_status_by_doctor(int(user_id), appointment_id, payload.status)
     return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(res))
+
+@router.get("/admin/payment", response_model=List[AppointmentAdminPaymentItem])
+def api_admin_list_appointments_by_payment(
+    filters: AppointmentPaymentFilterModel = Depends(),
+    current_admin = Depends(auth_handler.get_current_admin_user),
+):
+    data = list_all_appointments_by_payment_admin(filters)
+    return JSONResponse(status_code=200, content=jsonable_encoder(data))
 
 @router.post("/{appointment_id}/cancel", response_model=AppointmentCancelResponse)
 def api_cancel_my_appointment(

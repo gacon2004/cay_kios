@@ -57,6 +57,7 @@ class AppointmentPaymentFilterModel(BaseModel):
     offset: int = Field(0, ge=0)
 
 class AppointmentPatientItem(BaseModel):
+    appointment_id: int
     # --- Thông tin bệnh nhân ---
     patient_name: str
     patient_national_id: Optional[str] = None
@@ -81,3 +82,26 @@ class AppointmentPatientItem(BaseModel):
     # tuỳ frontend muốn show QR hay không (nếu cần)
     qr_code: Optional[str] = None
 
+class AppointmentAdminPaymentItem(BaseModel):
+    appointment_id: int
+
+    # --- Thông tin bệnh nhân ---
+    patient_name: str
+    patient_national_id: Optional[str] = None
+    patient_dob: Optional[str] = None       # yyyy-mm-dd
+    patient_gender: Optional[str] = None
+    patient_phone: Optional[str] = None
+
+    # --- Thông tin khám ---
+    service_name: str
+    clinic_name: str
+    doctor_name: str
+    shift_number: Optional[int] = None
+    queue_number: Optional[int] = None
+    price_vnd: int
+    estimated_time: Optional[datetime] = None
+
+    # --- Thanh toán ---
+    pay_status: str  # PAID | AWAITING | PENDING | PARTIALLY | UNPAID
+    paid_at: Optional[datetime] = None
+    order_code: Optional[str] = None
