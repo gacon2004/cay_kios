@@ -29,101 +29,7 @@ export default function AppointmentsPage() {
     } catch (error) {
       console.error('Failed to fetch appointments:', error);
       // Fallback data for demo
-      setAppointments([
-        {
-          id: '1',
-          patientId: '1',
-          doctorId: '1',
-          serviceId: '1',
-          roomId: '1',
-          patient: {
-            id: '1',
-            name: 'Nguyen Van A',
-            phone: '+84 901 234 567',
-            cccd: '001234567890',
-            dateOfBirth: '1985-06-15',
-            gender: 'male',
-            address: '123 Le Loi St, District 1, Ho Chi Minh City',
-            createdAt: '2024-01-15T08:00:00Z',
-          },
-          doctor: {
-            id: '1',
-            name: 'Dr. Sarah Johnson',
-            email: 'sarah.johnson@medkiosk.com',
-            phone: '+84 901 234 567',
-            specialization: 'Cardiology',
-            status: 'active',
-            createdAt: '2024-01-15T08:00:00Z',
-          },
-          service: {
-            id: '1',
-            name: 'General Checkup',
-            description: 'Comprehensive health examination',
-            price: 500000,
-            duration: 30,
-            status: 'active',
-            createdAt: '2024-01-15T08:00:00Z',
-          },
-          room: {
-            id: '1',
-            name: 'Examination Room 1',
-            type: 'General',
-            status: 'available',
-            equipment: ['Examination table', 'Blood pressure monitor'],
-            createdAt: '2024-01-15T08:00:00Z',
-          },
-          scheduledAt: '2024-01-20T09:00:00Z',
-          status: 'scheduled',
-          notes: 'Annual health checkup',
-          createdAt: '2024-01-15T08:00:00Z',
-        },
-        {
-          id: '2',
-          patientId: '2',
-          doctorId: '2',
-          serviceId: '2',
-          roomId: '3',
-          patient: {
-            id: '2',
-            name: 'Tran Thi B',
-            phone: '+84 902 345 678',
-            cccd: '001234567891',
-            dateOfBirth: '1990-03-22',
-            gender: 'female',
-            address: '456 Nguyen Hue St, District 1, Ho Chi Minh City',
-            createdAt: '2024-01-10T08:00:00Z',
-          },
-          doctor: {
-            id: '2',
-            name: 'Dr. Michael Chen',
-            email: 'michael.chen@medkiosk.com',
-            phone: '+84 902 345 678',
-            specialization: 'General Medicine',
-            status: 'active',
-            createdAt: '2024-01-10T08:00:00Z',
-          },
-          service: {
-            id: '2',
-            name: 'Blood Test',
-            description: 'Complete blood count',
-            price: 200000,
-            duration: 15,
-            status: 'active',
-            createdAt: '2024-01-10T08:00:00Z',
-          },
-          room: {
-            id: '3',
-            name: 'Laboratory',
-            type: 'Lab',
-            status: 'available',
-            equipment: ['Microscope', 'Centrifuge'],
-            createdAt: '2024-01-08T08:00:00Z',
-          },
-          scheduledAt: '2024-01-20T10:30:00Z',
-          status: 'completed',
-          createdAt: '2024-01-10T08:00:00Z',
-        },
-      ]);
+    
     } finally {
       setIsLoading(false);
     }
@@ -142,7 +48,7 @@ export default function AppointmentsPage() {
   const filteredAppointments = appointments.filter(appointment => {
     const matchesSearch = 
       appointment.patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      appointment.doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      appointment.doctor.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       appointment.service.name.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || appointment.status === statusFilter;
@@ -218,8 +124,8 @@ export default function AppointmentsPage() {
                     <div className="flex items-center gap-2">
                       <UserCheck className="h-4 w-4 text-gray-400" />
                       <div>
-                        <p className="font-medium">{appointment.doctor.name}</p>
-                        <p className="text-gray-600">{appointment.doctor.specialization}</p>
+                        <p className="font-medium">{appointment.doctor.full_name}</p>
+                        <p className="text-gray-600">{appointment.doctor.specialty}</p>
                       </div>
                     </div>
                     

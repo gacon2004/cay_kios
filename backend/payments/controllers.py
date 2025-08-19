@@ -2,6 +2,7 @@ import os, time, secrets, json, httpx
 from typing import Optional, Dict, Any
 from fastapi import HTTPException, status
 from backend.database.connector import DatabaseConnector
+from .models import Bank_informayion
 import re
 
 # ENV
@@ -15,7 +16,11 @@ def _gen_order_code(appointment_id: int) -> str:
     # ví dụ: APPT-123-250812-AB12
     return f"APPT{appointment_id}{time.strftime('%y%m%d')}{secrets.token_hex(2).upper()}"
 
-async def create_payment_order(appointment_id: int, ttl_seconds: Optional[int]) -> Dict[str, Any]:
+async def create_payment_order(
+        appointment_id: int, 
+        ttl_seconds: Optional[int], 
+        patient_id: int,
+) -> Dict[str, Any]:
     """
     Tạo 1 đơn thanh toán (VA theo đơn hàng) + gọi SePay trả VA/QR.
     """
@@ -27,6 +32,10 @@ async def create_payment_order(appointment_id: int, ttl_seconds: Optional[int]) 
     if not appt:
         raise HTTPException(404, "Appointment not found")
     appt = appt[0]
+
+    if int(appt["patient_id"]) != int(patient_id):
+        # trả 404 để không lộ thông tin cuộc hẹn của người khác
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Appointment not found")
 
     # 2) Không cho tạo nếu đã có đơn chưa thanh toán
     exists = db.query_get("""
@@ -80,6 +89,8 @@ async def create_payment_order(appointment_id: int, ttl_seconds: Optional[int]) 
 
     return {
         "payment_order_id": po_id,
+        "Stk": account_number,
+        "bank": bank_name,
         "order_code": order_code,
         "amount_vnd": amount,
         "status": "AWAITING",
@@ -87,12 +98,32 @@ async def create_payment_order(appointment_id: int, ttl_seconds: Optional[int]) 
         "qr_code_url": qr_code_url,
     }
 
-def get_payment_order_by_code(order_code: str) -> Optional[Dict[str, Any]]:
+def get_payment_order_by_code(
+        order_code: str,
+            patient_id: int,
+) -> Optional[Dict[str, Any]]:
     rows = db.query_get("""
-        SELECT id, order_code, amount_vnd, status, va_number, qr_code_url
+        SELECT id, order_code, amount_vnd, status, paid_at, va_number, qr_code_url, patient_id 
         FROM payment_orders WHERE order_code=%s
     """, (order_code,))
-    return rows[0] if rows else None
+    if not rows:
+        return None
+
+    po = rows[0]
+    # 🔒 Quyền: đơn phải thuộc về bệnh nhân hiện tại
+    if int(po["patient_id"]) != int(patient_id):
+        return None  # trả None để router trả 404
+
+    # Có thể loại bỏ patient_id trước khi trả ra
+    return {
+        "id": po["id"],
+        "order_code": po["order_code"],
+        "amount_vnd": po["amount_vnd"],
+        "status": po["status"],
+        "paid_at": po["paid_at"],
+        "va_number": po["va_number"],
+        "qr_code_url": po["qr_code_url"],
+    }
 
 def _json_dumps(obj) -> str:
     return json.dumps(obj, ensure_ascii=False, separators=(",", ":"))
@@ -141,9 +172,9 @@ def handle_sepay_webhook(payload: Dict[str, Any]) -> Dict[str, Any]:
 
     # 2) Lưu event trước (audit)
     db.query_put("""
-        INSERT INTO payment_events (payment_order_id, sepay_tx_id, code, reference_code,
+        INSERT INTO payment_events (sepay_tx_id, code, reference_code,
                 transfer_amount, transfer_type, content, raw_payload)
-        VALUES (Null, %s, %s, %s, %s, %s, %s, CAST(%s AS JSON))
+        VALUES (%s, %s, %s, %s, %s, %s, CAST(%s AS JSON))
     """, (tx_id, order_code, ref, amount, ttype, content, _json_dumps(payload)))
 
     # 3) Map về payment_orders và cập nhật trạng thái
@@ -167,3 +198,23 @@ def handle_sepay_webhook(payload: Dict[str, Any]) -> Dict[str, Any]:
         return {"success": "khong co code"}
 
     return {"success": True}
+
+def update_bank_account(bank_account : Bank_informayion ):
+    result = db.query_put("""
+        UPDATE bank_information
+        SET bank_name = %s, va = %s, account_number = %s
+        WHERE id = 1;
+    """, (bank_account.bank_name, bank_account.va, bank_account.account_number,))
+    if result == 0:
+        return "erorr"
+    return "update_sucess"
+
+def get_bank_information():
+    result = db.query_get("""
+        SELECT account_number, bank_name, va
+        FROM bank_information
+        WHERE id = 1;
+    """, ())
+    if not result :
+        return "erorr"
+    return result

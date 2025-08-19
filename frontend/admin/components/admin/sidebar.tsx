@@ -16,6 +16,9 @@ import {
   X
 } from 'lucide-react';
 import { useState } from 'react';
+import Image from 'next/image';
+import Icon from '@/app/public/icon.png';
+import { useAppContext } from '@/app/context/AppContext';
 
 const navigation = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
@@ -31,6 +34,7 @@ const navigation = [
 export function Sidebar() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { userRole } = useAppContext();
 
   return (
     <>
@@ -61,10 +65,16 @@ export function Sidebar() {
           {/* Logo */}
           <div className="flex items-center px-6 py-4 border-b border-gray-200">
             <div className="flex items-center">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <Stethoscope className="h-5 w-5 text-white" />
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center">
+                <Image
+                  src={Icon}
+                  alt="QR Code"
+                  width={128}
+                  height={128}
+                  unoptimized
+                />
               </div>
-              <span className="ml-2 text-xl font-bold text-gray-900">MedKiosk</span>
+              <span className="ml-2 text-xl font-bold uppercase text-gray-900">{`XTP - ${userRole || 'Guest'}`}</span>
             </div>
           </div>
 

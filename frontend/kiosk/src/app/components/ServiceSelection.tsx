@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Stethoscope, DollarSign, MapPin, Clock } from 'lucide-react';
+import { Stethoscope, MapPin, Clock } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import RoomModal from './RoomModal';
+import PickCalendar from './PickCalender';
 import type { Service, Room } from '../context/AppContext';
 import api from '../axios/api';
 
@@ -16,6 +18,8 @@ const ServiceSelection: React.FC = () => {
     } = useAppContext();
     const [services, setServices] = useState<Service[]>([]);
     const [showRoomModal, setShowRoomModal] = useState(false);
+    const [showCalendarModal, setShowCalendarModal] = useState(false); // State mới cho PickCalendar
+    const [selectedRoom, setSelectedRoom] = useState<Room | null>(null); // Lưu phòng đã chọn
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -34,22 +38,44 @@ const ServiceSelection: React.FC = () => {
         setShowRoomModal(true);
     };
 
-    const handleRoomSelect = async (room: Room) => {
-        if (!selectedService) return;
-        const appointmentData = await api.post(
-            `/appointments/?has_insurances=${localStorage.getItem(
-                'has_insurances'
-            )}`,
-            {
-                service_id: selectedService.id,
-                clinic_id: room.clinic_id,
-                doctor_id: room.doctor_id,
-            }
-        );
-
-        setAppointment(appointmentData?.data);
+    // Sửa: Sau khi chọn phòng, mở PickCalendar thay vì tạo appointment ngay
+    const handleRoomSelect = (room: Room) => {
+        setSelectedRoom(room);
         setShowRoomModal(false);
-        setCurrentStep(3);
+        setShowCalendarModal(true);
+    };
+
+    // Hàm mới: Xử lý sau khi chọn ngày và ca
+    const handleScheduleSelect = async (
+        work_date: string,
+        schedule_id: number
+    ) => {
+        if (!selectedService || !selectedRoom) return;
+
+        try {
+            const appointmentData = await api.post(
+                `/appointments/book-online?has_insurances=${localStorage.getItem(
+                    'has_insurances'
+                )}`,
+                {
+                    service_id: selectedService.id,
+                    clinic_id: selectedRoom.clinic_id,
+                    doctor_id: selectedRoom.doctor_id,
+                    schedule_id,
+                }
+            );
+
+            setAppointment(appointmentData?.data);
+            setShowCalendarModal(false);
+            setCurrentStep(3);
+        } catch (error: any) {
+            console.error('Failed to create appointment:', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status,
+            });
+            // Có thể thêm toast.error nếu có thư viện thông báo
+        }
     };
 
     if (loading) {
@@ -95,11 +121,11 @@ const ServiceSelection: React.FC = () => {
                                 </div>
                                 <div className="text-right">
                                     <div className="flex items-center text-green-600 font-semibold">
-                                        <DollarSign
-                                            size={16}
-                                            className="mr-1"
-                                        />
-                                        {service.price.toLocaleString()} VND
+                                        {service.price.toLocaleString('vi-VN', {
+                                            style: 'currency',
+                                            currency: 'VND',
+                                            currencyDisplay: 'code', // Hiển thị mã tiền tệ (VND) thay vì ký hiệu (₫)
+                                        })}
                                     </div>
                                 </div>
                             </div>
@@ -148,6 +174,16 @@ const ServiceSelection: React.FC = () => {
                     service={selectedService}
                     onRoomSelect={handleRoomSelect}
                     onClose={() => setShowRoomModal(false)}
+                />
+            )}
+
+            {/* Modal PickCalendar mới */}
+            {showCalendarModal && selectedRoom && selectedService && (
+                <PickCalendar
+                    room={selectedRoom}
+                    service={selectedService}
+                    onScheduleSelect={handleScheduleSelect}
+                    onClose={() => setShowCalendarModal(false)}
                 />
             )}
         </div>

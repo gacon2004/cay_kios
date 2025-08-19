@@ -34,11 +34,13 @@ interface Room {
 
 interface Appointment {
     id: number;
+    booking_channel: string;
     clinic_name: string;
     doctor_name: string;
     queue_number: number;
+    cur_price: number;
     qr_code: string;
-    appointment_time: string;
+    estimated_time: string;
 }
 
 interface AppContextType {

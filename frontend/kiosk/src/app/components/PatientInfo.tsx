@@ -7,6 +7,7 @@ import NumericKeyboard from './NumericKeyboard';
 import CCCDScanner from './CCCDScanner';
 import { useToast } from './ui/use-toast';
 import api from '@/app/axios/api';
+import { usePathname } from 'next/navigation';
 
 // Interface cho dữ liệu từ API provinces.open-api.vn
 interface Province {
@@ -83,6 +84,7 @@ const PatientInfo: React.FC = () => {
         useState<string>('');
 
     const { toast } = useToast();
+    const pathname = usePathname();
 
     // Danh sách nghề nghiệp tĩnh
     const occupations: Occupation[] = [
@@ -305,112 +307,114 @@ const PatientInfo: React.FC = () => {
 
     if (patientExists && patient) {
         return (
-            <div className="max-w-4xl mx-auto">
+            <div className="w-full">
                 <div className="bg-white rounded-2xl shadow-lg p-8">
                     <div className="text-center mb-8">
                         <h2 className="text-3xl font-bold text-gray-900 mb-2">
                             Thông Tin Bệnh Nhân
                         </h2>
-                        <p className="text-gray-600">
+                        <p className="text-gray-600 text-xl">
                             Xác nhận thông tin của bạn
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                        <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6  mb-8">
+                        <div className="space-y-4 text-xl">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block font-normal text-gray-400 mb-1">
                                     Số CCCD
                                 </label>
-                                <p className="text-lg font-semibold text-gray-900">
+                                <p className="text-2xl font-semibold text-gray-900">
                                     {patient.national_id}
                                 </p>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block  font-normal text-gray-400 mb-1">
                                     Họ và tên
                                 </label>
-                                <p className="text-lg font-semibold text-gray-900">
+                                <p className="text-2xl font-semibold text-gray-900">
                                     {patient.full_name}
                                 </p>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block  font-normal text-gray-400 mb-1">
                                     Ngày sinh
                                 </label>
-                                <p className="text-lg font-semibold text-gray-900">
+                                <p className="text-2xl font-semibold text-gray-900">
                                     {patient.date_of_birth}
                                 </p>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block  font-normal text-gray-400 mb-1">
                                     Giới tính
                                 </label>
-                                <p className="text-lg font-semibold text-gray-900">
+                                <p className="text-2xl font-semibold text-gray-900">
                                     {patient.gender}
                                 </p>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block  font-normal text-gray-400 mb-1">
                                     Nghề nghiệp
                                 </label>
-                                <p className="text-lg font-semibold text-gray-900">
+                                <p className="text-2xl font-semibold text-gray-900">
                                     {patient.occupation}
                                 </p>
                             </div>
                         </div>
-                        <div className="space-y-4">
+                        <div className="space-y-4 text-xl">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block  font-normal text-gray-400 mb-1">
                                     Số điện thoại
                                 </label>
-                                <p className="text-lg font-semibold text-gray-900">
+                                <p className="text-2xl font-semibold text-gray-900">
                                     {patient.phone}
                                 </p>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block  font-normal text-gray-400 mb-1">
                                     Phường/Xã
                                 </label>
-                                <p className="text-lg font-semibold text-gray-900">
+                                <p className="text-2xl font-semibold text-gray-900">
                                     {patient.ward}
                                 </p>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block  font-normal text-gray-400 mb-1">
                                     Quận/Huyện
                                 </label>
-                                <p className="text-lg font-semibold text-gray-900">
+                                <p className="text-2xl font-semibold text-gray-900">
                                     {patient.district}
                                 </p>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block  font-normal text-gray-400 mb-1">
                                     Tỉnh/Thành phố
                                 </label>
-                                <p className="text-lg font-semibold text-gray-900">
+                                <p className="text-2xl font-semibold text-gray-900">
                                     {patient.province}
                                 </p>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block  font-normal text-gray-400 mb-1">
                                     Dân tộc
                                 </label>
-                                <p className="text-lg font-semibold text-gray-900">
+                                <p className="text-2xl font-semibold text-gray-900">
                                     {patient.ethnicity}
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="text-center">
-                        <button
-                            onClick={handleNext}
-                            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-4 px-12 rounded-xl transition-colors duration-200 text-lg"
-                        >
-                            Tiếp tục
-                        </button>
-                    </div>
+                    {pathname !== '/checkAppointments' && (
+                        <div className="text-center">
+                            <button
+                                onClick={handleNext}
+                                className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-4 px-12 rounded-xl transition-colors duration-200 text-lg"
+                            >
+                                Tiếp tục
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         );
@@ -418,7 +422,7 @@ const PatientInfo: React.FC = () => {
 
     if (showForm) {
         return (
-            <div className="max-w-4xl mx-auto">
+            <div className="w-full">
                 <div className="bg-white rounded-2xl shadow-lg p-8">
                     <div className="text-center mb-8">
                         <h2 className="text-3xl font-bold text-gray-900 mb-2">
@@ -731,7 +735,7 @@ const PatientInfo: React.FC = () => {
     }
 
     return (
-        <div className="max-w-4xl mx-auto">
+        <div className="w-full">
             <div className="bg-white rounded-2xl shadow-lg p-8">
                 <div className="text-center mb-8">
                     <h2 className="text-3xl font-bold text-gray-900 mb-2">
