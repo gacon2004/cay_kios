@@ -172,7 +172,7 @@ const AppointmentCheck: React.FC = () => {
     const handleCancelAppointment = async (appointmentId: number) => {
         if (confirm('Bạn có chắc chắn muốn hủy lịch hẹn này?')) {
             try {
-                await api.delete(`/appointments/${appointmentId}/cancel`);
+                await api.post(`/appointments/${appointmentId}/cancel`);
                 setSuccessMessage('Hủy lịch hẹn thành công!');
                 if (patient?.national_id) {
                     await fetchAppointments(patient.national_id);
