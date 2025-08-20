@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { Stethoscope, MapPin, Clock } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
+import { usePathname } from 'next/navigation';
 import RoomModal from './RoomModal';
 import PickCalendar from './PickCalender';
 import type { Service, Room } from '../context/AppContext';
@@ -18,9 +19,10 @@ const ServiceSelection: React.FC = () => {
     } = useAppContext();
     const [services, setServices] = useState<Service[]>([]);
     const [showRoomModal, setShowRoomModal] = useState(false);
-    const [showCalendarModal, setShowCalendarModal] = useState(false); // State mới cho PickCalendar
-    const [selectedRoom, setSelectedRoom] = useState<Room | null>(null); // Lưu phòng đã chọn
+    const [showCalendarModal, setShowCalendarModal] = useState(false);
+    const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
     const [loading, setLoading] = useState(true);
+    const pathname = usePathname();
 
     useEffect(() => {
         const fetchServices = async () => {
@@ -38,14 +40,16 @@ const ServiceSelection: React.FC = () => {
         setShowRoomModal(true);
     };
 
-    // Sửa: Sau khi chọn phòng, mở PickCalendar thay vì tạo appointment ngay
     const handleRoomSelect = (room: Room) => {
         setSelectedRoom(room);
         setShowRoomModal(false);
-        setShowCalendarModal(true);
+        if (pathname === '/online') {
+            setShowCalendarModal(true);
+        } else if (pathname === '/offline') {
+            handleScheduleSelect('', 0); // Gọi hàm book appointment trực tiếp cho offline
+        }
     };
 
-    // Hàm mới: Xử lý sau khi chọn ngày và ca
     const handleScheduleSelect = async (
         work_date: string,
         schedule_id: number
@@ -53,17 +57,21 @@ const ServiceSelection: React.FC = () => {
         if (!selectedService || !selectedRoom) return;
 
         try {
-            const appointmentData = await api.post(
-                `/appointments/book-online?has_insurances=${localStorage.getItem(
-                    'has_insurances'
-                )}`,
-                {
-                    service_id: selectedService.id,
-                    clinic_id: selectedRoom.clinic_id,
-                    doctor_id: selectedRoom.doctor_id,
-                    schedule_id,
-                }
-            );
+            const isOnline = pathname === '/online';
+            const apiEndpoint = isOnline
+                ? `/appointments/book-online?has_insurances=${localStorage.getItem(
+                      'has_insurances'
+                  )}`
+                : `/appointments/book-offline?has_insurances=${localStorage.getItem(
+                      'has_insurances'
+                  )}`;
+
+            const appointmentData = await api.post(apiEndpoint, {
+                service_id: selectedService.id,
+                clinic_id: selectedRoom.clinic_id,
+                doctor_id: selectedRoom.doctor_id,
+                ...(isOnline && { schedule_id }), // Chỉ thêm schedule_id nếu là online
+            });
 
             setAppointment(appointmentData?.data);
             setShowCalendarModal(false);
@@ -74,7 +82,6 @@ const ServiceSelection: React.FC = () => {
                 response: error.response?.data,
                 status: error.response?.status,
             });
-            // Có thể thêm toast.error nếu có thư viện thông báo
         }
     };
 
@@ -124,7 +131,7 @@ const ServiceSelection: React.FC = () => {
                                         {service.price.toLocaleString('vi-VN', {
                                             style: 'currency',
                                             currency: 'VND',
-                                            currencyDisplay: 'code', // Hiển thị mã tiền tệ (VND) thay vì ký hiệu (₫)
+                                            currencyDisplay: 'code',
                                         })}
                                     </div>
                                 </div>
@@ -177,7 +184,6 @@ const ServiceSelection: React.FC = () => {
                 />
             )}
 
-            {/* Modal PickCalendar mới */}
             {showCalendarModal && selectedRoom && selectedService && (
                 <PickCalendar
                     room={selectedRoom}
