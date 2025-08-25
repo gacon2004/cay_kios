@@ -2,102 +2,102 @@ from fastapi import APIRouter, Depends, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import HTTPBearer
 from fastapi.responses import JSONResponse
+
 from backend.auth.providers.partient_provider import PatientProvider, AuthUser
-from backend.patients.models import PatientUpdateRequestModel
 from backend.auth.providers.auth_providers import AuthProvider, AdminUser
-from backend.auth.providers.partient_provider import PatientProvider
-from backend.patients.controllers import (
-    update_patient,
-    get_all_patients,
-    get_patient_by_id,
-    get_patient_profile,
-    delete_patient_by_id,
-)
 from backend.patients.models import (
     PatientUpdateRequestModel,
     PatientResponseModel,
 )
+from backend.patients.controllers import (
+    get_patient_profile,
+    update_patient,
+    get_all_patients,
+    get_patient_by_id,
+    delete_patient_by_id,
+)
 
-router = APIRouter()
+router = APIRouter(prefix="/patients", tags=["Patients"])
 OAuth2 = HTTPBearer()
 auth_admin_handler = AuthProvider()
 auth_patient_handler = PatientProvider()
 
-router = APIRouter(prefix="/patients", tags=["Patients"])
 
+# Lấy hồ sơ bệnh nhân đang đăng nhập
 @router.get("/me", response_model=PatientResponseModel)
 def get_me(current_user: AuthUser = Depends(auth_patient_handler.get_current_patient_user)):
-    return get_patient_profile(current_user)
+    patient = get_patient_profile(current_user)
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=jsonable_encoder(patient)
+    )
 
+
+# Cập nhật hồ sơ bệnh nhân đang đăng nhập
 @router.put("/me", response_model=PatientResponseModel)
 def update_me_api(
     data: PatientUpdateRequestModel,
-    current_user: dict = Depends(auth_patient_handler.get_current_patient_user)
+    current_user: AuthUser = Depends(auth_patient_handler.get_current_patient_user)
 ):
-    """
-    Cập nhật thông tin của chính bệnh nhân đang đăng nhập.
-    """
     patient_id = current_user["id"]
-
     update_patient(patient_id, data)
     updated = get_patient_by_id(patient_id)
-
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content=jsonable_encoder(updated)
     )
 
+
+# Admin: Lấy danh sách bệnh nhân
 @router.get("/", response_model=list[PatientResponseModel])
 def get_all_patients_api(
-    current_user: AdminUser = Depends(auth_admin_handler.get_current_admin_user)
+    current_user: AdminUser = Depends(auth_admin_handler.get_current_admin_user),
+    limit: int = 10,
+    offset: int = 0
 ):
-    """
-    Lấy danh sách tất cả bệnh nhân (chỉ dành cho admin).
-    """
-    patients = get_all_patients()
+    patients = get_all_patients(limit, offset)
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content=jsonable_encoder(patients)
     )
 
+
+# Admin: Lấy chi tiết bệnh nhân theo ID
 @router.get("/{patient_id}", response_model=PatientResponseModel)
 def get_patient_api(
     patient_id: int,
     current_user: AdminUser = Depends(auth_admin_handler.get_current_admin_user),
 ):
-    """
-    Lấy thông tin chi tiết của một bệnh nhân theo ID.
-    """
     patient = get_patient_by_id(patient_id)
-    return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(patient))
-
-
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=jsonable_encoder(patient)
+    )
+# Admin: Cập nhật thông tin bệnh nhân theo ID
 @router.put("/{patient_id}", response_model=PatientResponseModel)
 def update_patient_api(
     patient_id: int,
     patient_details: PatientUpdateRequestModel,
-    current_user: AdminUser = Depends(auth_patient_handler.get_current_patient_user),
+    current_user: AdminUser = Depends(auth_admin_handler.get_current_admin_user),
 ):
-    """
-    Cập nhật thông tin bệnh nhân theo ID.
-    """
     if patient_id != patient_details.id:
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"detail": "ID trong URL và trong payload không khớp"},
         )
-
-    update_patient(patient_details)
+    update_patient(patient_id, patient_details)
     updated = get_patient_by_id(patient_id)
-    return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(updated))
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=jsonable_encoder(updated)
+    )
 
+
+# Admin: Xóa bệnh nhân
 @router.delete("/{patient_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_patient_api(
     patient_id: int,
-    current_user: AdminUser = Depends(auth_admin_handler.get_current_admin_user)
+    current_user: AdminUser = Depends(auth_admin_handler.get_current_admin_user),
 ):
-    """
-    Xóa một bệnh nhân theo ID (chỉ dành cho admin).
-    """
     delete_patient_by_id(patient_id)
     return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=None)
