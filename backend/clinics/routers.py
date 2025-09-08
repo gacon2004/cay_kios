@@ -1,83 +1,91 @@
-from fastapi import APIRouter, HTTPException, Depends, status
-from fastapi.responses import JSONResponse
-from fastapi.encoders import jsonable_encoder
+from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
-
-from backend.auth.providers.auth_providers import AuthProvider, AdminUser
-from backend.services.controllers import (
-    get_all_services,
-    get_service_by_id,
-    create_service,
-    update_service,
-    delete_service,
-    get_my_services_by_user,
+from backend.auth.providers.auth_providers import AuthProvider, AdminUser, DoctorUser
+from backend.clinics.models import (
+    ClinicCreateModel,
+    ClinicUpdateModel,
+    ClinicResponseModel,
 )
-from backend.services.models import (
-    ServiceCreateModel,
-    ServiceUpdateModel,
-    ServiceResponseModel,
+from backend.clinics.controllers import (
+    get_all_clinics,
+    get_clinic_by_id,
+    create_clinic,
+    update_clinic,
+    delete_clinic,
+    get_clinics_by_service,
+    get_my_clinics_by_user,
 )
 
 auth_handler = AuthProvider()
-
-router = APIRouter(prefix="/services", tags=["Services"])
-
-
-@router.get("/", response_model=List[ServiceResponseModel])
-def api_get_all_services():
-    """Lấy danh sách tất cả dịch vụ"""
-    result = get_all_services()
-    return jsonable_encoder(result)
+router = APIRouter(prefix="/clinics", tags=["Clinics"])
 
 
-@router.get("/{service_id}", response_model=ServiceResponseModel)
-def api_get_service_by_id(service_id: int):
-    """Lấy chi tiết dịch vụ theo ID"""
-    result = get_service_by_id(service_id)
-    return jsonable_encoder(result)
+
+# GET: Lấy tất cả clinics
+
+@router.get("/", response_model=List[ClinicResponseModel])
+def list_clinics():
+    return get_all_clinics()
 
 
-@router.get("/doctor/me", response_model=List[ServiceResponseModel])
-def api_get_my_services(current_user=Depends(auth_handler.get_current_doctor_user)):
-    """Lấy danh sách dịch vụ của bác sĩ hiện tại"""
-    user_id = None
-    if isinstance(current_user, dict):
-        user_id = current_user.get("user_id", current_user.get("id"))
-    else:
-        user_id = getattr(current_user, "user_id", getattr(current_user, "id", None))
 
-    if not user_id:
+# GET: Lấy clinic theo ID
+
+@router.get("/{clinic_id}", response_model=ClinicResponseModel)
+def get_clinic(clinic_id: int):
+    clinic = get_clinic_by_id(clinic_id)
+    if not clinic:
+        raise HTTPException(status_code=404, detail="Clinic not found")
+    return clinic
+
+
+
+# GET: Lấy clinics theo doctor (user hiện tại)
+
+@router.get("/doctor/me", response_model=List[ClinicResponseModel])
+def get_my_clinics(current_user: DoctorUser = Depends(auth_handler.get_current_doctor_user)):
+    if not current_user.id:
         raise HTTPException(status_code=401, detail="Token thiếu user_id")
-
-    result = get_my_services_by_user(int(user_id))
-    return jsonable_encoder(result)
+    return get_my_clinics_by_user(current_user.id)
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model=ServiceResponseModel)
-def api_create_service(
-    data: ServiceCreateModel,
-    current_user: AdminUser = Depends(auth_handler.get_current_admin_user),
+# POST: Tạo clinic mới
+
+@router.post("/", response_model=ClinicResponseModel, status_code=status.HTTP_201_CREATED)
+def create_new_clinic(
+    data: ClinicCreateModel,
+    current_user: AdminUser = Depends(auth_handler.get_current_admin_user)
 ):
-    """Tạo dịch vụ mới"""
-    result = create_service(data)
-    return jsonable_encoder(result)
+    return create_clinic(data)
 
 
-@router.put("/", status_code=status.HTTP_200_OK, response_model=ServiceResponseModel)
-def api_update_service(
-    data: ServiceUpdateModel,
-    current_user: AdminUser = Depends(auth_handler.get_current_admin_user),
+
+# PUT: Update clinic
+
+@router.put("/{clinic_id}", response_model=ClinicResponseModel)
+def update_existing_clinic(
+    clinic_id: int,
+    data: ClinicUpdateModel,
+    current_user: AdminUser = Depends(auth_handler.get_current_admin_user)
 ):
-    """Cập nhật dịch vụ"""
-    result = update_service(data)
-    return jsonable_encoder(result)
+    return update_clinic(clinic_id, data)
 
 
-@router.delete("/{service_id}", status_code=status.HTTP_200_OK)
-def api_delete_service(
-    service_id: int,
-    current_user: AdminUser = Depends(auth_handler.get_current_admin_user),
+
+# DELETE: Xoá clinic
+
+@router.delete("/{clinic_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_clinic(
+    clinic_id: int,
+    current_user: AdminUser = Depends(auth_handler.get_current_admin_user)
 ):
-    """Xóa dịch vụ"""
-    delete_service(service_id)
-    return JSONResponse(status_code=200, content={"message": "Xóa dịch vụ thành công"})
+    delete_clinic(clinic_id)
+    return
+
+
+
+# GET: Lấy clinics theo service
+
+@router.get("/by-service/{service_id}")
+def api_clinics_by_service(service_id: int):
+    return get_clinics_by_service(service_id)
