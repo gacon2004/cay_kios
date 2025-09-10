@@ -24,8 +24,6 @@ const RoomModal = ({ service, onRoomSelect, onClose }: RoomModalProps) => {
         fetchRooms();
     }, [service.id]);
 
-    // phần còn lại giữ nguyên
-
     return (
         <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex items-center justify-center z-50">
             <div className="bg-white rounded-2xl shadow-2xl p-7 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
@@ -55,9 +53,9 @@ const RoomModal = ({ service, onRoomSelect, onClose }: RoomModalProps) => {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {rooms.map(room => (
+                        {rooms.map((room, index) => (
                             <div
-                                key={room.clinic_id}
+                                key={`${room.clinic_id}-${index}`}
                                 className={`rounded-xl p-6 border-2 transition-all duration-300 cursor-pointer ${
                                     room.clinic_status
                                         ? 'border-green-200 bg-green-50 hover:border-green-300 hover:shadow-md'
