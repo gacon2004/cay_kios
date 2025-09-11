@@ -7,18 +7,28 @@ import Image from 'next/image';
 import api from '../axios/api';
 
 const PrintTicket: React.FC = () => {
-    const { patient, selectedService, appointment, resetApp } = useAppContext();
+    const {
+        patient,
+        selectedService,
+        appointment,
+        resetApp,
+        order_code,
+        setOrderCode,
+    } = useAppContext();
     const [showPrintModal, setShowPrintModal] = useState(false);
     const [QR, setQR] = useState<string | undefined>();
     const [Timepayment, setTimepayment] = useState<Date | null>(null);
-    const [paymentStatus, setPaymentStatus] = useState('PENDING');
-    const [orderCode, setOrderCode] = useState<string | null>(null);
-    const [timeLeft, setTimeLeft] = useState<number>(15 * 60); // 15 minutes in seconds
+    const [paymentStatus, setPaymentStatus] = useState('AWAITING'); // AWAITING, PAID
+    const [timeLeft, setTimeLeft] = useState<number>(15 * 60); // 15 phút tính bằng giây
 
-    // Handle printing
+    // Xử lý in phiếu khám
     const handlePrint = async () => {
         if (!appointment?.id) {
             alert('Không tìm thấy thông tin cuộc hẹn!');
+            return;
+        }
+        if (paymentStatus !== 'PAID') {
+            alert('Vui lòng hoàn tất thanh toán trước khi in phiếu khám!');
             return;
         }
 
@@ -38,6 +48,7 @@ const PrintTicket: React.FC = () => {
             const blob = response.data;
             const url = window.URL.createObjectURL(blob);
 
+            // Tạo iframe để in
             const iframe = document.createElement('iframe');
             iframe.style.display = 'none';
             document.body.appendChild(iframe);
@@ -47,7 +58,7 @@ const PrintTicket: React.FC = () => {
                 try {
                     iframe.contentWindow?.print();
                 } catch (error) {
-                    console.error('Lỗi khi in:', error);
+                    console.error('Lỗi khi in phiếu khám:', error);
                     alert('Có lỗi xảy ra khi in phiếu khám');
                 } finally {
                     document.body.removeChild(iframe);
@@ -55,6 +66,7 @@ const PrintTicket: React.FC = () => {
                 }
             };
 
+            // Mở PDF trong tab mới
             const pdfUrl = window.URL.createObjectURL(blob);
             window.open(pdfUrl, '_blank');
             setTimeout(() => {
@@ -69,42 +81,95 @@ const PrintTicket: React.FC = () => {
                 }, 2000);
             }, 3000);
         } catch (error) {
-            console.error('Lỗi:', error);
+            console.error('Lỗi khi tải phiếu khám:', error);
             setShowPrintModal(false);
-            alert('Có lỗi xảy ra khi tải phiếu khám');
+            alert('Có lỗi xảy ra khi tải phiếu khám. Vui lòng thử lại.');
         }
     };
 
-    // Fetch QR code
+    // Lấy mã QR hoặc kiểm tra trạng thái thanh toán
     const fetchQR = async () => {
-        if (appointment?.id) {
-            try {
+        if (!appointment?.id) {
+            console.log('Không có appointment.id để lấy mã QR');
+            return;
+        }
+        console.log('Đang xử lý mã QR với appointment.id:', appointment.id);
+
+        try {
+            // Nếu đã có order_code từ payment_info, kiểm tra trạng thái
+            if (appointment?.payment_info?.order_code) {
+                console.log(
+                    'Kiểm tra trạng thái với order_code:',
+                    appointment.payment_info.order_code
+                );
+                const response = await api.get(
+                    `/payments/orders/${appointment.payment_info.order_code}`
+                );
+                console.log('Phản hồi trạng thái thanh toán:', response.data);
+                setQR(response.data.qr_code_url);
+                setTimepayment(
+                    response.data.paid_at
+                        ? new Date(response.data.paid_at)
+                        : null
+                );
+                setOrderCode(response.data.order_code);
+                setPaymentStatus(response.data.status || 'AWAITING');
+                setTimeLeft(response.data.time_left || 15 * 60); // Lấy time_left từ API nếu có
+            } else {
+                // Nếu chưa có order_code, tạo phiếu mới
+                console.log('Tạo phiếu thanh toán mới');
                 const qrResponse = await api.post('/payments/orders', {
                     appointment_id: appointment.id,
                 });
+                console.log('Phản hồi API QR:', qrResponse.data);
                 setQR(qrResponse.data.qr_code_url);
-                setTimepayment(qrResponse.data.paid_at || null);
+                setTimepayment(
+                    qrResponse.data.paid_at
+                        ? new Date(qrResponse.data.paid_at)
+                        : null
+                );
                 setOrderCode(qrResponse.data.order_code);
-                setTimeLeft(15 * 60); // Reset timer to 15 minutes when QR is fetched
-            } catch (error) {
-                console.error('Lỗi khi lấy QR:', error);
+                setPaymentStatus(qrResponse.data.status || 'AWAITING');
+                setTimeLeft(15 * 60); // Reset thời gian về 15 phút
             }
+        } catch (error) {
+            console.error('Lỗi khi lấy mã QR hoặc trạng thái:', error);
+            alert('Không thể tải mã QR. Vui lòng thử lại.');
         }
     };
 
-    // Check payment status
+    // Kiểm tra trạng thái thanh toán
     const checkPaymentStatus = async () => {
-        if (orderCode) {
-            try {
-                const response = await api.get(`/payments/orders/${orderCode}`);
-                setPaymentStatus(response.data.status);
-            } catch (error) {
-                console.error('Lỗi khi kiểm tra trạng thái thanh toán:', error);
+        if (!order_code) {
+            console.log(
+                'Không có order_code để kiểm tra trạng thái thanh toán'
+            );
+            return;
+        }
+        console.log(
+            'Kiểm tra trạng thái thanh toán với order_code:',
+            order_code
+        );
+        try {
+            const response = await api.get(`/payments/orders/${order_code}`);
+            console.log('Phản hồi trạng thái thanh toán:', response.data);
+            setPaymentStatus(response.data.status);
+            if (response.data.paid_at) {
+                setTimepayment(new Date(response.data.paid_at));
             }
+            if (response.data.qr_code_url && response.data.qr_code_url !== QR) {
+                setQR(response.data.qr_code_url);
+            }
+            setTimeLeft(response.data.time_left || timeLeft); // Cập nhật thời gian còn lại nếu API trả về
+        } catch (error) {
+            console.error('Lỗi khi kiểm tra trạng thái thanh toán:', error);
+            alert(
+                'Không thể kiểm tra trạng thái thanh toán. Vui lòng thử lại.'
+            );
         }
     };
 
-    // Countdown timer effect
+    // Đếm ngược thời gian cho mã QR
     useEffect(() => {
         let timer: NodeJS.Timeout | null = null;
         if (QR && paymentStatus !== 'PAID' && timeLeft > 0) {
@@ -112,9 +177,9 @@ const PrintTicket: React.FC = () => {
                 setTimeLeft(prev => {
                     if (prev <= 1) {
                         clearInterval(timer!);
-                        // Handle QR expiration (e.g., fetch new QR or show message)
-                        alert('Mã QR đã hết hạn. Vui lòng tạo mã mới.');
-                        fetchQR(); // Optionally fetch a new QR code
+                        console.log('Mã QR hết hạn, đang lấy mã mới');
+                        setQR(undefined); // Xóa QR cũ
+                        fetchQR(); // Lấy mã QR mới
                         return 0;
                     }
                     return prev - 1;
@@ -126,23 +191,29 @@ const PrintTicket: React.FC = () => {
         };
     }, [QR, paymentStatus, timeLeft]);
 
-    // Fetch QR on mount
+    // Lấy mã QR khi component mount hoặc appointment.id thay đổi
     useEffect(() => {
-        fetchQR();
-    }, []);
+        if (appointment?.id) {
+            fetchQR();
+        }
+    }, [appointment?.id]);
 
-    // Poll payment status
+    // Kiểm tra trạng thái thanh toán định kỳ
     useEffect(() => {
         let interval: NodeJS.Timeout | null = null;
-        if (orderCode && paymentStatus !== 'PAID') {
+        if (order_code && paymentStatus !== 'PAID') {
+            console.log(
+                'Bắt đầu polling trạng thái thanh toán với order_code:',
+                order_code
+            );
             interval = setInterval(checkPaymentStatus, 5000);
         }
         return () => {
             if (interval) clearInterval(interval);
         };
-    }, [orderCode, paymentStatus]);
+    }, [order_code, paymentStatus]);
 
-    // Format timeLeft to mm:ss
+    // Định dạng thời gian còn lại thành mm:ss
     const formatTime = (seconds: number): string => {
         const minutes = Math.floor(seconds / 60);
         const secs = seconds % 60;
@@ -151,10 +222,11 @@ const PrintTicket: React.FC = () => {
             .padStart(2, '0')}`;
     };
 
+    // Kiểm tra thông tin đầy đủ
     if (!patient || !selectedService || !appointment) {
         return (
             <div className="max-w-4xl mx-auto">
-                <div className="bg-white rounded-2xl shadowNg p-8">
+                <div className="bg-white rounded-2xl shadow-lg p-8">
                     <div className="text-center text-red-600">
                         <p>Thông tin không đầy đủ. Vui lòng thử lại.</p>
                     </div>
@@ -176,7 +248,7 @@ const PrintTicket: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-1 gap-8 text-xl">
-                    {/* Patient Information */}
+                    {/* Thông tin bệnh nhân */}
                     <div className="bg-blue-50 rounded-xl p-6">
                         <div className="flex items-center mb-4">
                             <User className="text-blue-500 mr-2" size={24} />
@@ -222,7 +294,7 @@ const PrintTicket: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Appointment Information */}
+                    {/* Thông tin cuộc hẹn */}
                     <div className="bg-green-50 rounded-xl p-6">
                         <div className="flex items-center mb-4">
                             <Stethoscope
@@ -309,20 +381,22 @@ const PrintTicket: React.FC = () => {
                                     Thời gian thanh toán:
                                 </span>
                                 <span className="font-semibold">
-                                    {Timepayment?.toLocaleString('vi-VN', {
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                        day: '2-digit',
-                                        month: '2-digit',
-                                        year: 'numeric',
-                                    }) ?? 'Chưa có thời gian'}
+                                    {Timepayment
+                                        ? Timepayment.toLocaleString('vi-VN', {
+                                              hour: '2-digit',
+                                              minute: '2-digit',
+                                              day: '2-digit',
+                                              month: '2-digit',
+                                              year: 'numeric',
+                                          })
+                                        : 'Chưa thanh toán'}
                                 </span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Payment Status or QR Code */}
+                {/* Hiển thị trạng thái thanh toán hoặc mã QR */}
                 {paymentStatus === 'PAID' ? (
                     <div className="mt-8 text-center">
                         <div className="bg-green-50 rounded-xl p-6 inline-block">
@@ -348,7 +422,7 @@ const PrintTicket: React.FC = () => {
                                     size={20}
                                 />
                                 <span className="text-gray-700">
-                                    Mã QR để thanh toán
+                                    Quét mã QR để thanh toán
                                 </span>
                             </div>
                             <div className="w-40 h-40 bg-white rounded-lg flex items-center justify-center mx-auto">
@@ -373,25 +447,20 @@ const PrintTicket: React.FC = () => {
                             <div className="flex items-center justify-center mb-4">
                                 <QrCode
                                     className="text-gray-400 mr-2"
-                                    size={25}
+                                    size={20}
                                 />
                                 <span className="text-gray-500">
-                                    Vui lòng đăng nhập để xem mã QR
+                                    Đang tải mã QR...
                                 </span>
                             </div>
-                            <div className="w-32 h-32 bg-white rounded-lg flex items-center justify-center mx-auto">
-                                <Image
-                                    src="/images/placeholder-qr.png"
-                                    alt="QR Placeholder"
-                                    width={200}
-                                    height={200}
-                                />
+                            <div className="w-40 h-40 bg-white rounded-lg flex items-center justify-center mx-auto">
+                                <div className="animate-pulse bg-gray-200 w-40 h-40 rounded-lg"></div>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* Print Button */}
+                {/* Nút in phiếu khám */}
                 <div className="mt-8 text-center">
                     <button
                         onClick={handlePrint}
@@ -407,7 +476,7 @@ const PrintTicket: React.FC = () => {
                     </button>
                 </div>
 
-                {/* Instructions */}
+                {/* Hướng dẫn sử dụng */}
                 <div className="mt-8 bg-yellow-50 rounded-xl p-6">
                     <h4 className="font-semibold text-gray-900 mb-3">
                         Hướng dẫn:
@@ -428,7 +497,7 @@ const PrintTicket: React.FC = () => {
                 </div>
             </div>
 
-            {/* Print Modal */}
+            {/* Modal khi đang in */}
             {showPrintModal && (
                 <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex items-center justify-center z-50">
                     <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm mx-4">

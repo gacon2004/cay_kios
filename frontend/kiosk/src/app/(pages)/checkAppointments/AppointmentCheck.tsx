@@ -1,52 +1,25 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Stethoscope, Trash2, CheckCircle } from 'lucide-react';
-import { useAppContext } from '@/app/context/AppContext';
+import {
+    Stethoscope,
+    Trash2,
+    CheckCircle,
+    CreditCard,
+    QrCode,
+} from 'lucide-react';
+import {
+    useAppContext,
+    Appointment,
+    PaymentInfo,
+} from '@/app/context/AppContext';
 import api from '@/app/axios/api';
-
-interface Appointment {
-    id: number;
-    patient_id: number;
-    clinic_id: number;
-    service_id: number;
-    doctor_id: number;
-    schedule_id: number;
-    queue_number: number;
-    shift_number: number;
-    estimated_time: string;
-    printed: number;
-    status: number;
-    booking_channel: string;
-    cur_price?: number;
-    service_name: string;
-    service_price?: number;
-    doctor_name: string;
-    clinic_name: string;
-    payment_info?: PaymentInfo;
-}
-
-interface PaymentInfo {
-    patient_name: string;
-    patient_national_id: string;
-    patient_dob: string;
-    patient_gender: string;
-    patient_phone: string;
-    service_name: string;
-    clinic_name: string;
-    doctor_name: string;
-    shift_number: number;
-    queue_number: number;
-    price_vnd?: number;
-    estimated_time: string;
-    pay_status: string;
-    paid_at: string;
-    order_code: string;
-    qr_code_url: string;
-}
+import Image from 'next/image';
 
 const AppointmentCheck: React.FC = () => {
-    const { patient } = useAppContext();
+    const { patient, setAppointment, setSelectedService, setOrderCode } =
+        useAppContext();
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string>('');
@@ -58,7 +31,15 @@ const AppointmentCheck: React.FC = () => {
     const [toDate, setToDate] = useState<string>('');
     const [statusFilter, setStatusFilter] = useState<number | null>(null);
     const [payStatus, setPayStatus] = useState<string | null>(null);
+    const [showQRModal, setShowQRModal] = useState<boolean>(false);
+    const [selectedAppointment, setSelectedAppointment] =
+        useState<Appointment | null>(null);
+    const [QR, setQR] = useState<string | undefined>();
+    const [paymentStatus, setPaymentStatus] = useState<string>('AWAITING');
+    const [timeLeft, setTimeLeft] = useState<number>(15 * 60);
+    const [Timepayment, setTimepayment] = useState<Date | null>(null);
 
+    // Lấy danh sách lịch hẹn
     useEffect(() => {
         if (patient?.national_id) {
             fetchAppointments(patient.national_id);
@@ -68,13 +49,151 @@ const AppointmentCheck: React.FC = () => {
         }
     }, [patient, page, fromDate, toDate, statusFilter, payStatus]);
 
+    // Lấy mã QR hoặc kiểm tra trạng thái thanh toán
+    const fetchQR = async (appointment: Appointment) => {
+        if (!appointment?.id) {
+            console.log('Không có appointment.id để lấy mã QR');
+            return;
+        }
+        console.log('Đang xử lý mã QR với appointment.id:', appointment.id);
+        try {
+            // Nếu đã có order_code từ payment_info
+            if (appointment.payment_info?.order_code) {
+                console.log(
+                    'Kiểm tra trạng thái với order_code:',
+                    appointment.payment_info.order_code
+                );
+                const response = await api.get(
+                    `/payments/orders/${appointment.payment_info.order_code}`
+                );
+                console.log('Phản hồi trạng thái thanh toán:', response.data);
+                setQR(response.data.qr_code_url);
+                setTimepayment(
+                    response.data.paid_at
+                        ? new Date(response.data.paid_at)
+                        : null
+                );
+                setOrderCode(response.data.order_code);
+                setPaymentStatus(response.data.status || 'AWAITING');
+                setTimeLeft(response.data.time_left || 15 * 60);
+            } else {
+                // Tạo phiếu thanh toán mới
+                console.log('Tạo phiếu thanh toán mới');
+                const qrResponse = await api.post('/payments/orders', {
+                    appointment_id: appointment.id,
+                });
+                console.log('Phản hồi API QR:', qrResponse.data);
+                setQR(qrResponse.data.qr_code_url);
+                setTimepayment(
+                    qrResponse.data.paid_at
+                        ? new Date(qrResponse.data.paid_at)
+                        : null
+                );
+                setOrderCode(qrResponse.data.order_code);
+                setPaymentStatus(qrResponse.data.status || 'AWAITING');
+                setTimeLeft(15 * 60);
+            }
+        } catch (error) {
+            console.error('Lỗi khi lấy mã QR hoặc trạng thái:', error);
+            alert('Không thể tải mã QR. Vui lòng thử lại.');
+        }
+    };
+
+    // Kiểm tra trạng thái thanh toán
+    const checkPaymentStatus = async (orderCode: string) => {
+        if (!orderCode) {
+            console.log(
+                'Không có order_code để kiểm tra trạng thái thanh toán'
+            );
+            return;
+        }
+        console.log(
+            'Kiểm tra trạng thái thanh toán với order_code:',
+            orderCode
+        );
+        try {
+            const response = await api.get(`/payments/orders/${orderCode}`);
+            console.log('Phản hồi trạng thái thanh toán:', response.data);
+            setPaymentStatus(response.data.status);
+            if (response.data.paid_at) {
+                setTimepayment(new Date(response.data.paid_at));
+            }
+            if (response.data.qr_code_url && response.data.qr_code_url !== QR) {
+                setQR(response.data.qr_code_url);
+            }
+            setTimeLeft(response.data.time_left || timeLeft);
+        } catch (error) {
+            console.error('Lỗi khi kiểm tra trạng thái thanh toán:', error);
+            alert(
+                'Không thể kiểm tra trạng thái thanh toán. Vui lòng thử lại.'
+            );
+        }
+    };
+
+    // Đếm ngược thời gian cho mã QR
+    useEffect(() => {
+        let timer: NodeJS.Timeout | null = null;
+        if (QR && paymentStatus !== 'PAID' && timeLeft > 0) {
+            timer = setInterval(() => {
+                setTimeLeft(prev => {
+                    if (prev <= 1) {
+                        clearInterval(timer!);
+                        console.log('Mã QR hết hạn, đang lấy mã mới');
+                        setQR(undefined);
+                        if (selectedAppointment) {
+                            fetchQR(selectedAppointment);
+                        }
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        }
+        return () => {
+            if (timer) clearInterval(timer);
+        };
+    }, [QR, paymentStatus, timeLeft, selectedAppointment]);
+
+    // Kiểm tra trạng thái thanh toán định kỳ
+    useEffect(() => {
+        let interval: NodeJS.Timeout | null = null;
+        if (
+            selectedAppointment?.payment_info?.order_code &&
+            paymentStatus !== 'PAID'
+        ) {
+            console.log(
+                'Bắt đầu polling trạng thái thanh toán với order_code:',
+                selectedAppointment.payment_info.order_code
+            );
+            interval = setInterval(() => {
+                if (selectedAppointment.payment_info?.order_code) {
+                    checkPaymentStatus(
+                        selectedAppointment.payment_info.order_code
+                    );
+                }
+            }, 5000);
+        }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [selectedAppointment, paymentStatus]);
+
+    // Định dạng thời gian còn lại thành mm:ss
+    const formatTime = (seconds: number): string => {
+        const minutes = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${minutes.toString().padStart(2, '0')}:${secs
+            .toString()
+            .padStart(2, '0')}`;
+    };
+
+    // Lấy danh sách lịch hẹn
     const fetchAppointments = async (nationalId: string) => {
         setLoading(true);
         setError('');
         try {
             const offset = (page - 1) * limit;
 
-            // Nếu có pay_status filter, chỉ sử dụng API payment
             if (payStatus) {
                 const paymentParams = new URLSearchParams({
                     limit: limit.toString(),
@@ -89,9 +208,8 @@ const AppointmentCheck: React.FC = () => {
                 );
                 const paymentData = paymentResponse.data;
 
-                // Chuyển đổi paymentData thành appointments
                 const convertedAppointments = paymentData.map(payment => ({
-                    id: 0, // API payment không trả appointment_id, đặt mặc định
+                    id: 0,
                     patient_id: 0,
                     clinic_id: 0,
                     service_id: 0,
@@ -101,7 +219,7 @@ const AppointmentCheck: React.FC = () => {
                     shift_number: payment.shift_number,
                     estimated_time: payment.estimated_time,
                     printed: 0,
-                    status: 1, // Giả định confirmed nếu không có thông tin
+                    status: 1,
                     booking_channel: '',
                     cur_price: payment.price_vnd,
                     service_name: payment.service_name,
@@ -114,7 +232,6 @@ const AppointmentCheck: React.FC = () => {
                 setAppointments(convertedAppointments);
                 setHasMore(paymentData.length === limit);
             } else {
-                // Nếu không có pay_status, gọi cả hai API
                 const appointmentParams = new URLSearchParams({
                     limit: limit.toString(),
                     offset: offset.toString(),
@@ -169,10 +286,11 @@ const AppointmentCheck: React.FC = () => {
         }
     };
 
+    // Hủy lịch hẹn
     const handleCancelAppointment = async (appointmentId: number) => {
         if (confirm('Bạn có chắc chắn muốn hủy lịch hẹn này?')) {
             try {
-                await api.delete(`/appointments/${appointmentId}/cancel`);
+                await api.post(`/appointments/${appointmentId}/cancel`);
                 setSuccessMessage('Hủy lịch hẹn thành công!');
                 if (patient?.national_id) {
                     await fetchAppointments(patient.national_id);
@@ -185,6 +303,30 @@ const AppointmentCheck: React.FC = () => {
         }
     };
 
+    // Xử lý khi nhấn "Tiếp tục thanh toán"
+    const handleContinuePayment = async (appointment: Appointment) => {
+        setSelectedAppointment(appointment);
+        setAppointment(appointment);
+        setSelectedService({
+            id: appointment.id.toString(),
+            name: appointment.service_name,
+            price: appointment.service_price || appointment.cur_price || 0,
+            description: '',
+        });
+        if (appointment.payment_info?.order_code) {
+            setOrderCode(appointment.payment_info.order_code);
+        }
+        await fetchQR(appointment);
+        setShowQRModal(true);
+    };
+
+    // Chuyển sang màn hình in phiếu
+    const handleGoToPrintTicket = () => {
+        setShowQRModal(false);
+        // PrintTicket sẽ sử dụng appointment và order_code từ context
+    };
+
+    // Định dạng giá tiền
     const formatPrice = (price?: number): string => {
         if (price == null) {
             return 'N/A';
@@ -257,9 +399,6 @@ const AppointmentCheck: React.FC = () => {
                         <option value="">Tất cả</option>
                         <option value="PAID">Đã thanh toán</option>
                         <option value="AWAITING">Đang chờ</option>
-                        <option value="PENDING">Đang xử lý</option>
-                        <option value="PARTIALLY">Thanh toán một phần</option>
-                        <option value="UNPAID">Chưa thanh toán</option>
                     </select>
                 </div>
                 <div className="flex items-end">
@@ -413,8 +552,8 @@ const AppointmentCheck: React.FC = () => {
                                                 : appointment.payment_info
                                                       ?.pay_status ===
                                                   'AWAITING'
-                                                ? 'Chờ thành toán'
-                                                : 'Chưa thanh toán'}
+                                                ? 'Chờ thanh toán'
+                                                : 'Đã hết hạn'}
                                         </span>
                                     </div>
                                     {appointment.payment_info?.pay_status ===
@@ -445,20 +584,40 @@ const AppointmentCheck: React.FC = () => {
                                     {appointment.status === 1 &&
                                         appointment.payment_info?.pay_status !==
                                             'PAID' && (
-                                            <button
-                                                onClick={() =>
-                                                    handleCancelAppointment(
-                                                        appointment.id
-                                                    )
-                                                }
-                                                className="mt-2 w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 rounded-lg transition-colors duration-200 flex items-center justify-center"
-                                            >
-                                                <Trash2
-                                                    className="mr-2"
-                                                    size={20}
-                                                />
-                                                Hủy lịch hẹn
-                                            </button>
+                                            <div className="mt-2 space-y-2">
+                                                {appointment.payment_info
+                                                    ?.pay_status ===
+                                                    'AWAITING' && (
+                                                    <button
+                                                        onClick={() =>
+                                                            handleContinuePayment(
+                                                                appointment
+                                                            )
+                                                        }
+                                                        className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-lg transition-colors duration-200 flex items-center justify-center"
+                                                    >
+                                                        <CreditCard
+                                                            className="mr-2"
+                                                            size={20}
+                                                        />
+                                                        Tiếp tục thanh toán
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() =>
+                                                        handleCancelAppointment(
+                                                            appointment.id
+                                                        )
+                                                    }
+                                                    className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 rounded-lg transition-colors duration-200 flex items-center justify-center"
+                                                >
+                                                    <Trash2
+                                                        className="mr-2"
+                                                        size={20}
+                                                    />
+                                                    Hủy lịch hẹn
+                                                </button>
+                                            </div>
                                         )}
                                 </div>
                             </div>
@@ -503,6 +662,88 @@ const AppointmentCheck: React.FC = () => {
             {error && (
                 <div className="mt-8 bg-red-50 rounded-xl p-6 text-center">
                     <span className="text-red-700 font-semibold">{error}</span>
+                </div>
+            )}
+
+            {/* Modal hiển thị mã QR */}
+            {showQRModal && selectedAppointment && (
+                <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex items-center justify-center z-50">
+                    <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md mx-4">
+                        <div className="text-center">
+                            <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                                Thanh toán lịch hẹn
+                            </h3>
+                            {paymentStatus === 'PAID' ? (
+                                <div>
+                                    <div className="flex items-center justify-center mb-4">
+                                        <span className="text-green-700 font-semibold text-2xl">
+                                            Thanh toán thành công
+                                        </span>
+                                    </div>
+                                    <div className="w-32 h-32 bg-white rounded-lg flex items-center justify-center mx-auto mb-4">
+                                        <CheckCircle
+                                            className="text-green-500"
+                                            size={64}
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={handleGoToPrintTicket}
+                                        className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
+                                    >
+                                        In phiếu khám
+                                    </button>
+                                </div>
+                            ) : QR ? (
+                                <div>
+                                    <div className="flex items-center justify-center mb-4">
+                                        <QrCode
+                                            className="text-gray-500 mr-2"
+                                            size={20}
+                                        />
+                                        <span className="text-gray-700">
+                                            Quét mã QR để thanh toán
+                                        </span>
+                                    </div>
+                                    <div className="w-40 h-40 bg-white rounded-lg flex items-center justify-center mx-auto">
+                                        <Image
+                                            src={QR}
+                                            alt="QR Code"
+                                            width={160}
+                                            height={160}
+                                            unoptimized
+                                        />
+                                    </div>
+                                    <div className="mt-4">
+                                        <span className="text-red-600 font-semibold text-lg">
+                                            Thời gian còn lại:{' '}
+                                            {formatTime(timeLeft)}
+                                        </span>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div>
+                                    <div className="flex items-center justify-center mb-4">
+                                        <QrCode
+                                            className="text-gray-400 mr-2"
+                                            size={20}
+                                        />
+                                        <span className="text-gray-500">
+                                            Đang tải mã QR...
+                                        </span>
+                                    </div>
+                                    <div className="w-40 h-40 bg-white rounded-lg flex items-center justify-center mx-auto">
+                                        <div className="animate-pulse bg-gray-200 w-40 h-40 rounded-lg"></div>
+                                    </div>
+                                </div>
+                            )}
+                            <button
+                                onClick={() => setShowQRModal(false)}
+                                className="mt-4 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
+                            >
+                                Đóng
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

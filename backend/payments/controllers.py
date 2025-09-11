@@ -100,7 +100,7 @@ async def create_payment_order(
 
 def get_payment_order_by_code(
         order_code: str,
-            patient_id: int,
+        patient_id: int,
 ) -> Optional[Dict[str, Any]]:
     rows = db.query_get("""
         SELECT id, order_code, amount_vnd, status, paid_at, va_number, qr_code_url, patient_id 

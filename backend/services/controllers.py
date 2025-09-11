@@ -5,63 +5,66 @@ from backend.services.models import ServiceCreateModel, ServiceUpdateModel
 
 db = DatabaseConnector()
 
-def get_all_services(has_insurances: bool = False) -> list[dict]:
-    services = db.query_get("SELECT * FROM services", ())
-    
+def get_all_services(has_insurances: bool = False) -> List[Dict[str, Any]]:
+    try:
+        services = db.call_procedure("sp_get_all_services", ())
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Stored procedure error: {e}"
+        )
+
     if has_insurances:
         for s in services:
             if s.get("price") is not None:
-                s["price"] = s["price"] / 2  
+                s["price"] = s["price"] / 2 
     return services
 
-def get_service_by_id(service_id: int) -> dict:
-    result = db.query_get("SELECT * FROM services WHERE id = %s", (service_id,))
+
+def get_service_by_id(service_id: int) -> Dict[str, Any]:
+    try:
+        result = db.call_procedure("sp_get_service_by_id", (service_id,))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Stored procedure error: {e}")
+
     if not result:
         raise HTTPException(status_code=404, detail="Dịch vụ không tồn tại")
     return result[0]
 
+
 def get_my_services_by_user(user_id: int) -> List[Dict[str, Any]]:
-    """
-    Trả về các dịch vụ (services) mà bác sĩ thuộc về,
-    map: doctors.user_id -> clinic_doctor_assignments -> clinics -> services.
-    Kết quả: id, name, description, price (khớp ServiceResponseModel).
-    """
-    sql = """
-        SELECT DISTINCT
-            s.id,
-            s.name,
-            s.description,
-            s.price
-        FROM doctors d
-        JOIN clinic_doctor_assignments cda ON cda.doctor_id = d.id
-        JOIN clinics c ON c.id = cda.clinic_id
-        JOIN services s ON s.id = c.service_id
-        WHERE d.user_id = %s
-        ORDER BY s.id
-    """
-    return db.query_get(sql, (user_id,))
+    try:
+        return db.call_procedure("sp_get_my_services_by_user", (user_id,))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Stored procedure error: {e}")
 
-def create_service(data: ServiceCreateModel) -> int:
-    return db.query_put(
-        "INSERT INTO services (name, description, price) VALUES (%s, %s, %s)",
-        (data.name, data.description, data.price)
-    )
 
-def update_service(data: ServiceUpdateModel) -> int:
-    update_fields = []
-    params = []
+def create_service(data: ServiceCreateModel) -> Dict[str, Any]:
+    try:
+        result = db.call_procedure(
+            "sp_create_service",
+            (data.name, data.description, data.price)
+        )
+        return result[0] if result else {}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Stored procedure error: {e}")
 
-    for field, value in data.dict(exclude={"id"}).items():
-        if value is not None:
-            update_fields.append(f"{field} = %s")
-            params.append(value)
 
-    if not update_fields:
-        raise HTTPException(status_code=400, detail="Không có dữ liệu để cập nhật")
+def update_service(data: ServiceUpdateModel) -> Dict[str, Any]:
+    try:
+        result = db.call_procedure(
+            "sp_update_service",
+            (data.id, data.name, data.description, data.price)
+        )
+        if not result:
+            raise HTTPException(status_code=404, detail="Dịch vụ không tồn tại")
+        return result[0]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Stored procedure error: {e}")
 
-    params.append(data.id)
-    sql = f"UPDATE services SET {', '.join(update_fields)} WHERE id = %s"
-    return db.query_put(sql, tuple(params))
 
-def delete_service(service_id: int) -> int:
-    return db.query_put("DELETE FROM services WHERE id = %s", (service_id,))
+def delete_service(service_id: int) -> None:
+    try:
+        db.call_procedure("sp_delete_service", (service_id,))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Stored procedure error: {e}")

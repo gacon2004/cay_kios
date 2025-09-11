@@ -296,6 +296,7 @@ def list_patient_appointments_by_payment(
             p.phone          AS patient_phone,
 
             -- Thông tin khám
+            a.id             AS appointment_id,
             s.name           AS service_name,
             c.name           AS clinic_name,
             d.full_name      AS doctor_name,
@@ -304,12 +305,10 @@ def list_patient_appointments_by_payment(
             CAST(a.cur_price AS SIGNED) AS price_vnd,
             a.estimated_time,
 
-            -- Thanh toán
+            -- Thanh toán (bản ghi mới nhất)
             po.status        AS pay_status,
             po.paid_at,
-            po.order_code,
-            po.qr_code_url
-
+            po.order_code
         FROM appointments a
         JOIN patients  p ON p.id = a.patient_id
         JOIN services  s ON s.id = a.service_id
@@ -326,7 +325,6 @@ def list_patient_appointments_by_payment(
         ) po ON po.appointment_id = a.id
         WHERE {" AND ".join(where)}
     """
-
     if filters.pay_status:
         sql += " AND po.status = %s "
         params.append(filters.pay_status.upper())
@@ -430,6 +428,72 @@ def update_appointment_status_by_doctor(user_id: int, appointment_id: int, new_s
         try: conn.rollback()
         except: pass
         raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Lỗi cơ sở dữ liệu: {e}")
+
+def list_all_appointments_by_payment_admin(
+    filters: AppointmentPaymentFilterModel
+) -> List[Dict[str, Any]]:
+    where = ["1=1"]
+    params: list = []
+
+    if filters.from_date:
+        where.append("DATE(COALESCE(a.estimated_time, a.created_at)) >= %s")
+        params.append(filters.from_date)
+    if filters.to_date:
+        where.append("DATE(COALESCE(a.estimated_time, a.created_at)) <= %s")
+        params.append(filters.to_date)
+
+    sql = f"""
+        SELECT
+            -- Bệnh nhân
+            p.full_name      AS patient_name,
+            p.national_id    AS patient_national_id,
+            DATE_FORMAT(p.date_of_birth, '%%Y-%%m-%%d') AS patient_dob,
+            p.gender         AS patient_gender,
+            p.phone          AS patient_phone,
+
+            -- Khám
+            a.id             AS appointment_id,
+            s.name           AS service_name,
+            c.name           AS clinic_name,
+            d.full_name      AS doctor_name,
+            a.shift_number,
+            a.queue_number,
+            CAST(a.cur_price AS SIGNED) AS price_vnd,
+            a.estimated_time,
+
+            -- Thanh toán (bản ghi mới nhất)
+            COALESCE(po.status, 'UNPAID') AS pay_status,
+            po.paid_at,
+            po.order_code
+
+        FROM appointments a
+        JOIN patients  p ON p.id = a.patient_id
+        JOIN services  s ON s.id = a.service_id
+        JOIN clinics   c ON c.id = a.clinic_id
+        JOIN doctors   d ON d.id = a.doctor_id
+        LEFT JOIN (
+            SELECT t.*
+            FROM payment_orders t
+            JOIN (
+                SELECT appointment_id, MAX(id) AS max_id
+                FROM payment_orders
+                GROUP BY appointment_id
+            ) z ON z.max_id = t.id
+        ) po ON po.appointment_id = a.id
+        WHERE {" AND ".join(where)}
+    """
+    if filters.pay_status:
+        sql += " AND COALESCE(po.status, 'UNPAID') = %s "
+        params.append(filters.pay_status.upper())
+
+    sql += """
+        ORDER BY COALESCE(a.estimated_time, a.created_at) DESC, a.id DESC
+        LIMIT %s OFFSET %s
+    """
+    params.extend([filters.limit, filters.offset])
+
+    return db.query_get(sql, tuple(params))
+
 
 def cancel_my_appointment(appointment_id: int, patient_id: int) -> dict:
     conn = db.get_connection()

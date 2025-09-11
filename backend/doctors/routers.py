@@ -41,7 +41,7 @@ async def get_my_doctor_profile(
 
     if not doctor:
         raise HTTPException(status_code=404, detail="Không tìm thấy bác sĩ")
-    
+
     return doctor
 
 @router.put("/me", response_model=DoctorResponseModel)
