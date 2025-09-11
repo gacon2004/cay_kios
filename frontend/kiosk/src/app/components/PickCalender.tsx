@@ -52,7 +52,7 @@ const PickCalendar: React.FC<PickCalendarProps> = ({
     const [shifts, setShifts] = useState<Shift[]>([]);
     const [loadingCalendar, setLoadingCalendar] = useState(true);
     const [loadingShifts, setLoadingShifts] = useState(false);
-    const [currentMonth, setCurrentMonth] = useState(new Date(2025, 7, 1));
+    const [currentMonth, setCurrentMonth] = useState(new Date(2025, 8, 1));
 
     useEffect(() => {
         const fetchCalendar = async () => {
