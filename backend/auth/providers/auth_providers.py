@@ -51,9 +51,9 @@ class AuthProvider:
     PWD_CONTEXT = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
     def __init__(self) -> None:
-        self.SECRET_KEY = os.getenv("APP_SECRET_STRING")
+        self.SECRET_KEY = os.getenv("APP_SECRET")
         if not self.SECRET_KEY:
-            raise EnvironmentError("APP_SECRET_STRING environment variable not found")
+            raise EnvironmentError("APP_SECRET environment variable not found")
 
     def verify_password(self, plain_password, hashed_password) -> bool:
         return self.PWD_CONTEXT.verify(plain_password, hashed_password)
