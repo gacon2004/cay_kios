@@ -1,3 +1,3 @@
 #!/bin/bash
-export PYTHONPATH=${PWD}  # Thêm root repo vào sys.path, để Python tìm thấy 'backend' như module
+export PYTHONPATH=/opt/render/project/src  # Path chuẩn của Render
 uvicorn backend.main:app --host 0.0.0.0 --port $PORT
