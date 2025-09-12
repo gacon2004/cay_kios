@@ -134,6 +134,7 @@ const PrintTicket: React.FC = () => {
     };
 
     // Kiểm tra trạng thái thanh toán
+
     const checkPaymentStatus = async () => {
         if (!order_code) {
             console.log(
@@ -146,14 +147,21 @@ const PrintTicket: React.FC = () => {
             order_code
         );
         try {
-            const response = await api.get(`/payments/orders/${order_code}`);
-            console.log('Phản hồi trạng thái thanh toán:', response.data);
-            setPaymentStatus(response.data.status);
-            if (response.data.paid_at) {
-                setTimepayment(new Date(response.data.paid_at));
-            }
-            if (response.data.qr_code_url && response.data.qr_code_url !== QR) {
-                setQR(response.data.qr_code_url);
+            if (QR !== null) {
+                const response = await api.get(
+                    `/payments/orders/${order_code}`
+                );
+                console.log('Phản hồi trạng thái thanh toán:', response.data);
+                setPaymentStatus(response.data.status);
+                if (response.data.paid_at) {
+                    setTimepayment(new Date(response.data.paid_at));
+                }
+                if (
+                    response.data.qr_code_url &&
+                    response.data.qr_code_url !== QR
+                ) {
+                    setQR(response.data.qr_code_url);
+                }
             }
         } catch (error) {
             console.error('Lỗi khi kiểm tra trạng thái thanh toán:', error);
@@ -194,17 +202,19 @@ const PrintTicket: React.FC = () => {
 
     // Kiểm tra trạng thái thanh toán định kỳ
     useEffect(() => {
-        let interval: NodeJS.Timeout | null = null;
-        if (order_code && paymentStatus !== 'PAID') {
-            console.log(
-                'Bắt đầu polling trạng thái thanh toán với order_code:',
-                order_code
-            );
-            interval = setInterval(checkPaymentStatus, 5000);
+        if (QR !== null) {
+            let interval: NodeJS.Timeout | null = null;
+            if (order_code && paymentStatus !== 'PAID') {
+                console.log(
+                    'Bắt đầu polling trạng thái thanh toán với order_code:',
+                    order_code
+                );
+                interval = setInterval(checkPaymentStatus, 5000);
+            }
+            return () => {
+                if (interval) clearInterval(interval);
+            };
         }
-        return () => {
-            if (interval) clearInterval(interval);
-        };
     }, [order_code, paymentStatus]);
 
     // Định dạng thời gian còn lại thành mm:ss
