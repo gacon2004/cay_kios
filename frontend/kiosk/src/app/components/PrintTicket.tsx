@@ -18,8 +18,8 @@ const PrintTicket: React.FC = () => {
     const [showPrintModal, setShowPrintModal] = useState(false);
     const [QR, setQR] = useState<string | undefined>();
     const [Timepayment, setTimepayment] = useState<Date | null>(null);
-    const [paymentStatus, setPaymentStatus] = useState('AWAITING'); // AWAITING, PAID
-    const [timeLeft, setTimeLeft] = useState<number>(15 * 60); // 15 phút tính bằng giây
+    const [paymentStatus, setPaymentStatus] = useState('AWAITING');
+    const [timeLeft, setTimeLeft] = useState<number>(15 * 60);
 
     // Xử lý in phiếu khám
     const handlePrint = async () => {
@@ -48,7 +48,6 @@ const PrintTicket: React.FC = () => {
             const blob = response.data;
             const url = window.URL.createObjectURL(blob);
 
-            // Tạo iframe để in
             const iframe = document.createElement('iframe');
             iframe.style.display = 'none';
             document.body.appendChild(iframe);
@@ -66,7 +65,6 @@ const PrintTicket: React.FC = () => {
                 }
             };
 
-            // Mở PDF trong tab mới
             const pdfUrl = window.URL.createObjectURL(blob);
             window.open(pdfUrl, '_blank');
             setTimeout(() => {
@@ -96,7 +94,6 @@ const PrintTicket: React.FC = () => {
         console.log('Đang xử lý mã QR với appointment.id:', appointment.id);
 
         try {
-            // Nếu đã có order_code từ payment_info, kiểm tra trạng thái
             if (appointment?.payment_info?.order_code) {
                 console.log(
                     'Kiểm tra trạng thái với order_code:',
@@ -114,9 +111,7 @@ const PrintTicket: React.FC = () => {
                 );
                 setOrderCode(response.data.order_code);
                 setPaymentStatus(response.data.status || 'AWAITING');
-                setTimeLeft(response.data.time_left || 15 * 60); // Lấy time_left từ API nếu có
             } else {
-                // Nếu chưa có order_code, tạo phiếu mới
                 console.log('Tạo phiếu thanh toán mới');
                 const qrResponse = await api.post('/payments/orders', {
                     appointment_id: appointment.id,
@@ -130,7 +125,7 @@ const PrintTicket: React.FC = () => {
                 );
                 setOrderCode(qrResponse.data.order_code);
                 setPaymentStatus(qrResponse.data.status || 'AWAITING');
-                setTimeLeft(15 * 60); // Reset thời gian về 15 phút
+                setTimeLeft(15 * 60); // Reset thời gian chỉ khi tạo QR mới
             }
         } catch (error) {
             console.error('Lỗi khi lấy mã QR hoặc trạng thái:', error);
@@ -160,7 +155,6 @@ const PrintTicket: React.FC = () => {
             if (response.data.qr_code_url && response.data.qr_code_url !== QR) {
                 setQR(response.data.qr_code_url);
             }
-            setTimeLeft(response.data.time_left || timeLeft); // Cập nhật thời gian còn lại nếu API trả về
         } catch (error) {
             console.error('Lỗi khi kiểm tra trạng thái thanh toán:', error);
             alert(
@@ -178,9 +172,9 @@ const PrintTicket: React.FC = () => {
                     if (prev <= 1) {
                         clearInterval(timer!);
                         console.log('Mã QR hết hạn, đang lấy mã mới');
-                        setQR(undefined); // Xóa QR cũ
-                        fetchQR(); // Lấy mã QR mới
-                        return 0;
+                        setQR(undefined);
+                        fetchQR();
+                        return 15 * 60; // Reset thời gian sau khi gọi QR mới
                     }
                     return prev - 1;
                 });
@@ -248,7 +242,6 @@ const PrintTicket: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-1 gap-8 text-xl">
-                    {/* Thông tin bệnh nhân */}
                     <div className="bg-blue-50 rounded-xl p-6">
                         <div className="flex items-center mb-4">
                             <User className="text-blue-500 mr-2" size={24} />
@@ -483,16 +476,16 @@ const PrintTicket: React.FC = () => {
                     </h4>
                     <ul className="space-y-2 text-gray-700">
                         <li>
-                            • Vui lòng hoàn tất thanh toán trước khi in phiếu
-                            khám
+                            &bull; Vui lòng hoàn tất thanh toán trước khi in
+                            phiếu khám
                         </li>
                         <li>
-                            • Mã QR sẽ hết hạn sau 15 phút. Vui lòng thanh toán
-                            trong thời gian này.
+                            &bull; Mã QR sẽ hết hạn sau 15 phút. Vui lòng thanh
+                            toán trong thời gian này.
                         </li>
-                        <li>• Vui lòng đến phòng khám đúng giờ hẹn</li>
-                        <li>• Mang theo phiếu khám và giấy tờ tùy thân</li>
-                        <li>• Liên hệ tổng đài nếu cần hỗ trợ</li>
+                        <li>&bull; Vui lòng đến phòng khám đúng giờ hẹn</li>
+                        <li>&bull; Mang theo phiếu khám và giấy tờ tùy thân</li>
+                        <li>&bull; Liên hệ tổng đài nếu cần hỗ trợ</li>
                     </ul>
                 </div>
             </div>
