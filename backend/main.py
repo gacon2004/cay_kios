@@ -56,7 +56,8 @@ origins = [
     "http://localhost:3001",
     "http://localhost:4000",
     "http://localhost:19006",
-    "https://kiosk-lyart.vercel.app"
+    "https://kiosk-lyart.vercel.app",
+    "https://kiosk-admin-nu.vercel.app"
 ]
 
 # Set middleware
