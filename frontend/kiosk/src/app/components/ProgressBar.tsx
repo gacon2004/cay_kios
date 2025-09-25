@@ -25,8 +25,8 @@ const ProgressBar = () => {
     ];
 
     return (
-        <div className="bg-white border-b border-[#e4e6eb]">
-            <div className="max-w-6xl mx-auto px-6 py-3">
+        <div className="bg-white w-full fixed z-50 border-b border-[#e4e6eb]">
+            <div className="max-w-6xl mx-auto px-6 py-3 pt-18">
                 <div className="flex items-center justify-between">
                     {steps.map((step, index) => (
                         <div key={step.number} className="flex items-center">

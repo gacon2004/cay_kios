@@ -127,7 +127,7 @@ const NumericKeyboard: React.FC<NumericKeyboardProps> = ({
                                         ? 'bg-red-500 hover:bg-red-600 text-white'
                                         : key === '⌫'
                                         ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
-                                        : 'bg-blue-500 hover:bg-blue-600 text-white'
+                                        : 'bg-background hover:bg-blue-600 text-white'
                                 } hover:transform hover:scale-105 active:scale-95 focus:outline-none`}
                             >
                                 {key === '⌫' ? (

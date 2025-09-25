@@ -11,11 +11,11 @@ export default function MainLayout() {
     const menuItems = [
         {
             id: 'bhyt',
-            title: 'Khám Bệnh Bảo Hiểm Y Tế',
+            title: 'Khám Có BHYT',
             subtitle: 'Đăng ký khám bệnh với thẻ BHYT',
             icon: Heart,
             color: 'bg-blue-500',
-            action: () => router.push('/bhyt'),
+            action: () => router.push('/offline'),
         },
         {
             id: 'service',
@@ -23,10 +23,7 @@ export default function MainLayout() {
             subtitle: 'Đăng ký khám dịch vụ không BHYT',
             icon: CreditCard,
             color: 'bg-green-500',
-            action: () =>
-                toast({
-                    title: '🚧 Tính năng này chưa được triển khai',
-                }),
+            action: () => router.push('/offline'),
         },
         {
             id: 'appointment',
@@ -34,10 +31,7 @@ export default function MainLayout() {
             subtitle: 'Đặt lịch khám theo thời gian',
             icon: Clock,
             color: 'bg-purple-500',
-            action: () =>
-                toast({
-                    title: '🚧 Tính năng này chưa được triển khai',
-                }),
+            action: () => router.push('/online'),
         },
         {
             id: 'results',
@@ -79,7 +73,7 @@ export default function MainLayout() {
                                         <h3 className="text-2xl font-semibold text-gray-900 mb-2">
                                             {item.title}
                                         </h3>
-                                        <p className="text-gray-600 text-lg">
+                                        <p className="text-gray-600 text-sm">
                                             {item.subtitle}
                                         </p>
                                     </div>

@@ -84,6 +84,7 @@ const PatientInfo: React.FC = () => {
         useState<string>('');
 
     const { toast } = useToast();
+    const [loading, setLoading] = useState<boolean>(false);
     const pathname = usePathname();
 
     // Danh sách nghề nghiệp tĩnh
@@ -160,6 +161,7 @@ const PatientInfo: React.FC = () => {
     }, []);
 
     const handleCCCDCheck = async (cccdValue: string) => {
+        setLoading(true);
         try {
             setPatientForm({ ...patientForm, national_id: cccdValue });
 
@@ -169,6 +171,7 @@ const PatientInfo: React.FC = () => {
             );
 
             // Lưu trạng thái bảo hiểm
+
             const hasInsurance =
                 insuranceResponse?.data?.has_insurance || false;
             if (localStorage.getItem('has_insurances')) {
@@ -195,6 +198,8 @@ const PatientInfo: React.FC = () => {
                     'Không thể xử lý thông tin CCCD. Vui lòng thử lại.',
             });
             console.error('Error in handleCCCDCheck:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -409,7 +414,7 @@ const PatientInfo: React.FC = () => {
                         <div className="text-center">
                             <button
                                 onClick={handleNext}
-                                className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-4 px-12 rounded-xl transition-colors duration-200 text-lg"
+                                className="bg-background hover:opacity-80 text-white font-semibold py-4 px-12 rounded-xl transition-colors duration-200 text-lg"
                             >
                                 Tiếp tục
                             </button>
@@ -736,6 +741,16 @@ const PatientInfo: React.FC = () => {
 
     return (
         <div className="w-full">
+            {loading ? (
+                <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex items-center justify-center z-50">
+                    <div className="text-center absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto"></div>
+                        <p className="text-gray-600 mt-2">Đang kiểm tra...</p>
+                    </div>
+                </div>
+            ) : (
+                ''
+            )}
             <div className="bg-white rounded-2xl shadow-lg p-8">
                 <div className="text-center mb-8">
                     <h2 className="text-3xl font-bold text-gray-900 mb-2">
@@ -779,7 +794,7 @@ const PatientInfo: React.FC = () => {
                     <button
                         onClick={handleCCCDSubmit}
                         disabled={cccd.length !== 12}
-                        className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white font-semibold py-4 px-12 rounded-xl transition-colors duration-200 text-lg cursor-pointer"
+                        className="bg-background hover:opacity-85 disabled:bg-gray-300 text-white font-semibold py-4 px-12 rounded-xl transition-colors duration-200 text-lg cursor-pointer"
                     >
                         Xác nhận
                     </button>

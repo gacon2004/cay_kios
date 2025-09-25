@@ -298,7 +298,7 @@ const AppointmentCheck: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="relative h-[570px] overflow-y-auto">
+                    <div className="relative h-full overflow-y-auto">
                         {loading ? (
                             <div className="text-center absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto"></div>
@@ -551,13 +551,6 @@ const AppointmentCheck: React.FC = () => {
                                     {successMessage}
                                 </span>
                             </div>
-                        </div>
-                    )}
-                    {error && (
-                        <div className="mt-8 bg-red-50 rounded-xl p-6 text-center">
-                            <span className="text-red-700 font-semibold">
-                                {error}
-                            </span>
                         </div>
                     )}
                 </div>
