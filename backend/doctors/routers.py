@@ -22,6 +22,8 @@ auth_handler = AuthProvider()
 
 router = APIRouter(prefix="/doctors", tags=["Doctors"])
 
+
+# API: Lấy danh sách tất cả bác sĩ (chỉ admin)
 @router.get("/", response_model=List[DoctorResponseModel])
 async def get_all_doctors_api(
     current_user: DoctorUser = Depends(auth_handler.get_current_admin_user)
@@ -32,6 +34,8 @@ async def get_all_doctors_api(
         content=jsonable_encoder(doctors)
     )
 
+
+# API: Lấy thông tin hồ sơ của chính bác sĩ đang đăng nhập
 @router.get("/me", response_model=DoctorResponseModel)
 async def get_my_doctor_profile(
     current_user: dict = Depends(auth_handler.get_current_doctor_user)
@@ -44,6 +48,8 @@ async def get_my_doctor_profile(
 
     return doctor
 
+
+# API: Cập nhật hồ sơ của chính bác sĩ đang đăng nhập
 @router.put("/me", response_model=DoctorResponseModel)
 async def update_my_doctor_profile(
     update_data: DoctorUpdateRequestModel,
@@ -58,10 +64,20 @@ async def update_my_doctor_profile(
             detail="ID trong payload không khớp với tài khoản đăng nhập"
         )
 
-    update_doctor(update_data)
+    # Truyền đúng từng field thay vì truyền nguyên object
+    update_doctor(
+        id=update_data.id,
+        full_name=update_data.full_name,
+        specialty=update_data.specialty,
+        phone=update_data.phone,
+        email=update_data.email
+    )
+
     updated = get_doctor_by_id(doctor_id)
     return updated
 
+
+# API: Lấy thông tin chi tiết 1 bác sĩ (chỉ admin)
 @router.get("/{doctor_id}", response_model=DoctorResponseModel)
 async def get_doctor_api(
     doctor_id: int,
@@ -70,6 +86,8 @@ async def get_doctor_api(
     doctor = get_doctor_by_id(doctor_id)
     return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(doctor))
 
+
+# API: Cập nhật thông tin 1 bác sĩ theo ID (chỉ admin)
 @router.put("/{doctor_id}", response_model=DoctorResponseModel)
 def update_doctor_api(
     doctor_id: int,
@@ -82,11 +100,20 @@ def update_doctor_api(
             content={"detail": "ID trong URL và payload không khớp"},
         )
 
-    update_doctor(doctor_details)
+    # ✅ Truyền đúng từng field
+    update_doctor(
+        id=doctor_details.id,
+        full_name=doctor_details.full_name,
+        specialty=doctor_details.specialty,
+        phone=doctor_details.phone,
+        email=doctor_details.email
+    )
+
     updated = get_doctor_by_id(doctor_id)
     return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(updated))
 
 
+# API: Xóa 1 bác sĩ theo ID (chỉ admin)
 @router.delete("/{doctor_id}", status_code=status.HTTP_200_OK)
 def delete_doctor_api(
     doctor_id: int,
