@@ -48,20 +48,19 @@ def update_me_api(
         content=jsonable_encoder(updated)
     )
 
-
 # Admin: Lấy danh sách bệnh nhân
-@router.get("/", response_model=list[PatientResponseModel])
+@router.get("/")
 def get_all_patients_api(
     current_user: AdminUser = Depends(auth_admin_handler.get_current_admin_user),
     limit: int = Query(..., description="Số bản ghi mỗi trang"),
-    offset: int = Query(..., description="Bản ghi bắt đầu")
+    offset: int = Query(..., description="Bản ghi bắt đầu"),
+    search: str = Query("", description="Từ khóa tìm kiếm (tên, CCCD, SDT, ...)")
 ):
-    result = get_all_patients(limit, offset)
+    result = get_all_patients(limit, offset, search)
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content=jsonable_encoder(result)
     )
-
 
 # Admin: Lấy chi tiết bệnh nhân theo ID
 @router.get("/{patient_id}", response_model=PatientResponseModel)

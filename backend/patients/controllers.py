@@ -50,10 +50,10 @@ def update_patient(patient_id: int, patient_model: PatientUpdateRequestModel) ->
     return 1  # Có thể đổi thành rowcount nếu procedure trả về
 
 
-# Lấy danh sách bệnh nhân với phân trang
-def get_all_patients(limit: int, offset: int) -> dict:
-    # Gọi procedure: chỉ trả về 1 result set
-    result = database.call_procedure("sp_get_all_patients", (limit, offset))
+# Lấy danh sách bệnh nhân với phân trang + tìm kiếm
+def get_all_patients(limit: int, offset: int, search: str = "") -> dict:
+    # Gọi procedure với search
+    result = database.call_procedure("sp_get_all_patients", (limit, offset, search))
 
     if not result:
         return {
@@ -85,6 +85,7 @@ def get_all_patients(limit: int, offset: int) -> dict:
             **meta
         }
     }
+
 
 # Tìm bệnh nhân theo CCCD/CMND
 def get_patients_by_national_id(national_id: str) -> list[dict]:
