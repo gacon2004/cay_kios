@@ -58,10 +58,13 @@ class AuthProvider:
     def verify_password(self, plain_password, hashed_password) -> bool:
         if isinstance(hashed_password, bytes):
             hashed_password = hashed_password.decode("utf-8")
+        # Cắt ngắn mật khẩu xuống tối đa 72 byte để tránh lỗi ValueError từ bcrypt
+        plain_password = plain_password[:72]
         return self.PWD_CONTEXT.verify(plain_password, hashed_password)
 
-
     def get_password_hash(self, password) -> str:
+        # Cắt ngắn mật khẩu xuống tối đa 72 byte để tránh lỗi ValueError từ bcrypt
+        password = password[:72]
         return self.PWD_CONTEXT.hash(password)
 
     def create_access_token(self, user_id: int, role: str, expires_delta: Optional[timedelta] = None) -> str:
