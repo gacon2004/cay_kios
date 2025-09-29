@@ -78,9 +78,9 @@ export default function RoomsPage() {
             };
 
             if (editingRoom) {
-                await axiosInstance.put(`/rooms/${editingRoom.id}`, payload);
+                await axiosInstance.put(`/clinics/${editingRoom.id}`, payload);
             } else {
-                await axiosInstance.post('/rooms', payload);
+                await axiosInstance.post('/clinics', payload);
             }
             setIsDialogOpen(false);
             setEditingRoom(null);
@@ -94,7 +94,7 @@ export default function RoomsPage() {
     const handleDelete = async (id: number) => {
         if (confirm('Bạn có chắc chắn muốn xóa phòng này?')) {
             try {
-                await axiosInstance.delete(`/rooms/${id}`);
+                await axiosInstance.delete(`/clinics/${id}`);
                 fetchRooms(userRole);
             } catch (error) {
                 console.error('Failed to delete room:', error);
@@ -232,13 +232,13 @@ export default function RoomsPage() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="Còn trống">
+                                        <SelectItem value="active">
                                             Còn trống
                                         </SelectItem>
-                                        <SelectItem value="Đã đầy">
+                                        <SelectItem value="full">
                                             Đã đầy
                                         </SelectItem>
-                                        <SelectItem value="Bảo trì">
+                                        <SelectItem value="fixed">
                                             Bảo trì
                                         </SelectItem>
                                     </SelectContent>

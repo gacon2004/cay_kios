@@ -48,19 +48,22 @@ export interface Room {
 }
 
 export interface Appointment {
-  id: string;
-  patientId: string;
-  doctorId: string;
-  serviceId: string;
-  roomId: string;
-  patient: Patient;
-  doctor: Doctor;
-  service: Service;
-  room: Room;
-  scheduledAt: string;
-  status: "scheduled" | "in-progress" | "completed" | "cancelled";
-  notes?: string;
-  createdAt: string;
+  appointment_id: number;
+  clinic_name: string;
+  doctor_name: string;
+  estimated_time: Date;
+  order_code: string;
+  paid_at: Date | null;
+  patient_dob: string;
+  patient_gender: "Nam" | "Nữ" | "Khác";
+  patient_name: string;
+  patient_national_id: string;
+  patient_phone: string;
+  pay_status: "AWAITING" | "PAID" | "CANCELLED";
+  price_vnd: number;
+  queue_number: number;
+  service_name: string;
+  shift_number: number;
 }
 
 export interface Statistics {

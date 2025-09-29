@@ -74,6 +74,7 @@ export default function DoctorsPage() {
         }
     };
 
+    //Thêm và chỉnh sửa bác sĩ
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!userRole) return;
@@ -98,12 +99,13 @@ export default function DoctorsPage() {
         }
     };
 
+    //Xóa bác sĩ
     const handleDelete = async (id: number) => {
         if (userRole !== 'admin') return;
 
         if (confirm('Bạn có chắc muốn xóa bác sĩ này không?')) {
             try {
-                await axiosInstance.delete(`/doctors/?id=${id}`);
+                await axiosInstance.delete(`/doctors/${id}`);
                 fetchDoctors(userRole);
             } catch (error) {
                 console.error('Xóa bác sĩ thất bại:', error);

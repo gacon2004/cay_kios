@@ -25,7 +25,7 @@ const navigation = [
   { name: 'Doctors', href: '/admin/doctors', icon: UserCheck },
   { name: 'Patients', href: '/admin/patients', icon: Users },
   { name: 'Services', href: '/admin/services', icon: Stethoscope },
-  { name: 'Rooms', href: '/admin/rooms', icon: Building2 },
+  { name: 'Clinics', href: '/admin/clinics', icon: Building2 },
   { name: 'Appointments', href: '/admin/appointments', icon: Calendar },
   { name: 'Statistics', href: '/admin/statistics', icon: BarChart3 },
   { name: 'Settings', href: '/admin/settings', icon: Settings },
