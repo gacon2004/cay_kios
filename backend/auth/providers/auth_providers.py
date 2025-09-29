@@ -56,7 +56,10 @@ class AuthProvider:
             raise EnvironmentError("APP_SECRET environment variable not found")
 
     def verify_password(self, plain_password, hashed_password) -> bool:
+        if isinstance(hashed_password, bytes):
+            hashed_password = hashed_password.decode("utf-8")
         return self.PWD_CONTEXT.verify(plain_password, hashed_password)
+
 
     def get_password_hash(self, password) -> str:
         return self.PWD_CONTEXT.hash(password)
