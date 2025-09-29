@@ -41,16 +41,13 @@ def get_clinic(clinic_id: int):
 
 
 # GET: Lấy clinics theo doctor (user hiện tại)
-
 @router.get("/doctor/me", response_model=List[ClinicResponseModel])
-def get_my_clinics(current_user: DoctorUser = Depends(auth_handler.get_current_doctor_user)):
-    if not current_user.id:
+def get_my_clinics(current_user: dict = Depends(auth_handler.get_current_doctor_user)):
+    if not current_user.get("id"):
         raise HTTPException(status_code=401, detail="Token thiếu user_id")
-    return get_my_clinics_by_user(current_user.id)
-
+    return get_my_clinics_by_user(current_user["id"])
 
 # POST: Tạo clinic mới
-
 @router.post("/", response_model=ClinicResponseModel, status_code=status.HTTP_201_CREATED)
 def create_new_clinic(
     data: ClinicCreateModel,
