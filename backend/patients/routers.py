@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, status
+from typing import Optional
+from fastapi import APIRouter, Depends, Query, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import HTTPBearer
 from fastapi.responses import JSONResponse
@@ -52,13 +53,13 @@ def update_me_api(
 @router.get("/", response_model=list[PatientResponseModel])
 def get_all_patients_api(
     current_user: AdminUser = Depends(auth_admin_handler.get_current_admin_user),
-    limit: int = 10,
-    offset: int = 0
+    limit: int = Query(..., description="Số bản ghi mỗi trang"),
+    offset: int = Query(..., description="Bản ghi bắt đầu")
 ):
-    patients = get_all_patients(limit, offset)
+    result = get_all_patients(limit, offset)
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content=jsonable_encoder(patients)
+        content=jsonable_encoder(result)
     )
 
 

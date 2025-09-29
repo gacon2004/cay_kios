@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import HTTPException, status
 from backend.database.connector import DatabaseConnector
 from backend.auth.providers.partient_provider import PatientProvider, AuthUser
@@ -50,10 +51,40 @@ def update_patient(patient_id: int, patient_model: PatientUpdateRequestModel) ->
 
 
 # Lấy danh sách bệnh nhân với phân trang
-def get_all_patients(limit: int = 10, offset: int = 0) -> list[dict]:
-    # Nếu sp_get_all_patients không có tham số -> bỏ limit/offset
-    return call_procedure("sp_get_all_patients", (limit, offset))
+def get_all_patients(limit: int, offset: int) -> dict:
+    # Gọi procedure: chỉ trả về 1 result set
+    result = database.call_procedure("sp_get_all_patients", (limit, offset))
 
+    if not result:
+        return {
+            "data": [],
+            "pagination": {
+                "page": (offset // limit) + 1 if limit else 1,
+                "limit": limit,
+                "totalRecords": 0,
+                "totalPages": 0
+            }
+        }
+
+    # Lấy meta từ record đầu tiên
+    meta = {
+        "totalRecords": result[0]["totalRecords"],
+        "totalPages": result[0]["totalPages"]
+    }
+
+    # Xóa totalRecords & totalPages khỏi từng row để tránh lặp
+    for row in result:
+        row.pop("totalRecords", None)
+        row.pop("totalPages", None)
+
+    return {
+        "data": result,
+        "pagination": {
+            "page": (offset // limit) + 1,
+            "limit": limit,
+            **meta
+        }
+    }
 
 # Tìm bệnh nhân theo CCCD/CMND
 def get_patients_by_national_id(national_id: str) -> list[dict]:
