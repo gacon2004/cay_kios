@@ -44,6 +44,7 @@ export default function ServicesPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingService, setEditingService] = useState<Service | null>(null);
     const [formData, setFormData] = useState({
+        id: 0,
         name: '',
         description: '',
         price: 0,
@@ -139,6 +140,7 @@ export default function ServicesPage() {
 
     const resetForm = () => {
         setFormData({
+            id: 0,
             name: '',
             description: '',
             price: 0,
@@ -150,6 +152,7 @@ export default function ServicesPage() {
     const openEditDialog = (service: Service) => {
         setEditingService(service);
         setFormData({
+            id: service.id ? Number(service.id) : 0,
             name: service.name || '',
             description: service.description || '',
             price: service.price || 0,
@@ -183,129 +186,121 @@ export default function ServicesPage() {
     return (
         <div className="space-y-6">
             <PageHeader title="Dịch vụ" description="Quản lý dịch vụ và giá cả">
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                {userRole === 'admin' && (
+                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger asChild>
                         <Button
-                            onClick={() => {
-                                setEditingService(null);
-                                resetForm();
-                            }}
+                        onClick={() => {
+                            setEditingService(null);
+                            resetForm();
+                        }}
                         >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Thêm Dịch Vụ
+                        <Plus className="h-4 w-4 mr-2" />
+                        Thêm Dịch Vụ
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-md">
                         <DialogHeader>
-                            <DialogTitle>
-                                {editingService
-                                    ? 'Sửa Dịch Vụ'
-                                    : 'Thêm Dịch Vụ'}
-                            </DialogTitle>
+                        <DialogTitle>
+                            {editingService ? 'Sửa Dịch Vụ' : 'Thêm Dịch Vụ'}
+                        </DialogTitle>
                         </DialogHeader>
                         <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <Label htmlFor="name">Tên Dịch Vụ</Label>
-                                <Input
-                                    id="name"
-                                    value={formData.name}
-                                    onChange={e =>
-                                        setFormData({
-                                            ...formData,
-                                            name: e.target.value,
-                                        })
-                                    }
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="description">Mô Tả</Label>
-                                <Textarea
-                                    id="description"
-                                    value={formData.description}
-                                    onChange={e =>
-                                        setFormData({
-                                            ...formData,
-                                            description: e.target.value,
-                                        })
-                                    }
-                                    rows={3}
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="price">Giá (VND)</Label>
-                                <Input
-                                    id="price"
-                                    type="number"
-                                    value={formData.price}
-                                    onChange={e =>
-                                        setFormData({
-                                            ...formData,
-                                            price: Number(e.target.value),
-                                        })
-                                    }
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="duration">
-                                    Thời gian dự kiến (phút)
-                                </Label>
-                                <Input
-                                    id="duration"
-                                    type="number"
-                                    value={formData.duration}
-                                    onChange={e =>
-                                        setFormData({
-                                            ...formData,
-                                            duration: Number(e.target.value),
-                                        })
-                                    }
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="status">Trạng Thái</Label>
-                                <Select
-                                    value={formData.status}
-                                    onValueChange={(
-                                        value: 'active' | 'inactive'
-                                    ) =>
-                                        setFormData({
-                                            ...formData,
-                                            status: value,
-                                        })
-                                    }
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="active">
-                                            Hoạt động
-                                        </SelectItem>
-                                        <SelectItem value="inactive">
-                                            Ngừng hoạt động
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="flex gap-2 pt-4">
-                                <Button type="submit" className="flex-1">
-                                    {editingService ? 'Sửa' : 'Tạo mới'}
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => setIsDialogOpen(false)}
-                                >
-                                    Hủy
-                                </Button>
-                            </div>
+                        <div>
+                            <Label htmlFor="name">Tên Dịch Vụ</Label>
+                            <Input
+                            id="name"
+                            value={formData.name}
+                            onChange={e =>
+                                setFormData({
+                                ...formData,
+                                name: e.target.value,
+                                })
+                            }
+                            required
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="description">Mô Tả</Label>
+                            <Textarea
+                            id="description"
+                            value={formData.description}
+                            onChange={e =>
+                                setFormData({
+                                ...formData,
+                                description: e.target.value,
+                                })
+                            }
+                            rows={3}
+                            required
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="price">Giá (VND)</Label>
+                            <Input
+                            id="price"
+                            type="number"
+                            value={formData.price}
+                            onChange={e =>
+                                setFormData({
+                                ...formData,
+                                price: Number(e.target.value),
+                                })
+                            }
+                            required
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="duration">Thời gian dự kiến (phút)</Label>
+                            <Input
+                            id="duration"
+                            type="number"
+                            value={formData.duration}
+                            onChange={e =>
+                                setFormData({
+                                ...formData,
+                                duration: Number(e.target.value),
+                                })
+                            }
+                            required
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="status">Trạng Thái</Label>
+                            <Select
+                            value={formData.status}
+                            onValueChange={(value: 'active' | 'inactive') =>
+                                setFormData({
+                                ...formData,
+                                status: value,
+                                })
+                            }
+                            >
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="active">Hoạt động</SelectItem>
+                                <SelectItem value="inactive">Ngừng hoạt động</SelectItem>
+                            </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="flex gap-2 pt-4">
+                            <Button type="submit" className="flex-1">
+                            {editingService ? 'Sửa' : 'Tạo mới'}
+                            </Button>
+                            <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setIsDialogOpen(false)}
+                            >
+                            Hủy
+                            </Button>
+                        </div>
                         </form>
                     </DialogContent>
-                </Dialog>
+                    </Dialog>
+                )}
             </PageHeader>
 
             {/* Tìm kiếm */}
@@ -343,7 +338,9 @@ export default function ServicesPage() {
                                                     : 'secondary'
                                             }
                                         >
-                                            {service.status}
+                                            <p>{service.id}</p>
+                                            <p>{service.status}</p>
+                                            
                                         </Badge>
                                     </div>
                                 </div>

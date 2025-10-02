@@ -47,6 +47,22 @@ export interface Room {
   status: "Còn trống" | "Đã đầy" | "Bảo trì";
 }
 
+export interface ClinicDetails {
+  clinic_id: Room["id"];
+  clinic_name: string;
+  clinic_status: "active" | "full" | "fixed";
+  doctor_id: Doctor["id"] | null;
+  doctor_name: Doctor["full_name"] | null;
+  specialty: string;
+  phone: string | null;
+  schedule_id: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  max_patients: string | null;
+  booked_patients: number | null;
+  remaining: string | null;
+}
+
 export interface Appointment {
   appointment_id: number;
   clinic_name: string;

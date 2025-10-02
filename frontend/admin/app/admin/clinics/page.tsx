@@ -54,8 +54,7 @@ export default function RoomsPage() {
         try {
             let endpoint = 'clinics/';
             if (role === 'doctor') {
-                const clinicsByService = await axiosInstance.get('/doctors/me');
-                endpoint = `/clinics/by-service/${clinicsByService.data.id}`;
+                endpoint = `/clinics/doctor/me`
             }
 
             const response = await axiosInstance.get(endpoint);
@@ -135,11 +134,11 @@ export default function RoomsPage() {
         }
     };
 
-    const filteredRooms = rooms.filter(
-        room =>
-            room.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            room.location.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredRooms = rooms.filter(room =>
+        (room?.name ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (room?.location ?? '').toLowerCase().includes(searchTerm.toLowerCase())
     );
+
 
     if (isLoading) {
         return (
