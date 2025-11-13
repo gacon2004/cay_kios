@@ -101,19 +101,23 @@ class DatabaseConnector:
             )
 
     def call_procedure(self, proc_name: str, params=()):
-        """Gọi Stored Procedure và trả về kết quả"""
         try:
             with self.get_connection() as connection:
                 with connection.cursor() as cursor:
                     cursor.callproc(proc_name, params)
 
-                    # Lấy luôn kết quả SELECT trong SP
-                    results = cursor.fetchall()
+                    results = []
+                # ✅ Lấy kết quả SELECT trả ra từ stored procedure
+                    for result in cursor.stored_results():
+                        results.extend(result.fetchall())
 
                     connection.commit()  # cần commit nếu SP có insert/update
                     return results
         except Exception as e:
+            # In lỗi ra log để debug dễ hơn
+            print("Stored procedure error:", e)
             raise HTTPException(
-                status_code=500, detail=f"Stored procedure error: {str(e)}"
-            )
+            status_code=500,
+                detail=f"Stored procedure error: {str(e)}"
+        )
 
