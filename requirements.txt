@@ -1,14 +1,27 @@
-fastapi==0.103.0
-uvicorn[standard]==0.22.0
+# ---- CORE (ĐẶT BẮT BUỘC TRÊN CÙNG) ----
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+pydantic==2.8.2
+# XÓA: pydantic-core==2.6.3 (Pydantic V2 sẽ tự cài đặt lõi phù hợp)
+
+# ---- ENV ----
 python-dotenv==1.0.0
+
+# ---- DB ----
 pymysql==1.1.0
+
+# ---- SECURITY ----
 passlib[bcrypt]==1.7.4
+bcrypt==4.1.3
 python-jose[cryptography]==3.3.0
-pydantic[email]
-jinja2
-qrcode
-pillow==11.3.0
-qrcode[pil]
-reportlab
-pytz
-httpx
+
+# ---- TEMPLATE ----
+jinja2==3.1.3
+
+# ---- IMAGE/FILES ----
+qrcode==7.4.2
+pillow==11.0.0
+reportlab==4.0.8
+
+# ---- HTTP CLIENT ----
+httpx==0.24.1
